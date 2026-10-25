@@ -1,12 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_yami_recipes/feature/recipes/presentation/screen/recipe_detail_screen.dart';
+import '../../../../services/ocr_service.dart';
+import '../../domain/entities/recipe.dart';
 import '../../domain/repositories/recipes_repository_impl.dart';
 import '../bloc/recipes_bloc.dart';
 import '../widget/add_recipe_bottom_sheet.dart';
 
-class RecipesScreen extends StatelessWidget {
+class RecipesScreen extends StatefulWidget {
   const RecipesScreen({super.key});
+
+  @override
+  State<RecipesScreen> createState() => _RecipesScreenState();
+}
+
+class _RecipesScreenState extends State<RecipesScreen> {
+  final OcrService _ocrService = OcrService();
+  late final recipesBloc = context.read<RecipesBloc>();
+  bool _isScanning = false;
+
+  Future<void> _handleScanScreenshot() async {
+    setState(() {
+      _isScanning = true;
+    });
+
+    try {
+      // 1. Выбираем скриншот и распознаем текст
+      final String? recognizedText = await _ocrService.pickAndRecognizeText();
+
+      if (recognizedText != null && recognizedText.isNotEmpty) {
+        if (!mounted) return;
+        final recipe = createRecipeFromOcr(recognizedText);
+
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (sheetContext) {
+            return BlocProvider.value(
+              value: recipesBloc, // передаем уже пойманный блок
+              child: AddRecipeBottomSheet(recipeToEdit: recipe),
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка сканирования: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ocrService.dispose(); // Не забываем закрыть сканнер при уничтожении экрана
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +72,20 @@ class RecipesScreen extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Рецепты'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          actions: [
+            // Кнопка сканирования скриншота в AppBar
+            IconButton(
+              icon: _isScanning
+                  ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+                  : const Icon(Icons.document_scanner),
+              tooltip: 'Сканировать',
+              onPressed: _isScanning ? null : _handleScanScreenshot,
+            ),
+          ],
         ),
         body: BlocBuilder<RecipesBloc, RecipesState>(
           builder: (context, state) {
@@ -35,23 +104,23 @@ class RecipesScreen extends StatelessWidget {
 
                   return Dismissible(
                     // Уникальный ключ для каждого элемента обязателен
-                      key: Key(recipe.id),
-                      direction: DismissDirection.endToStart, // Свайп только справа налево
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        color: Colors.red,
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      onDismissed: (direction) {
-                        // Пушим событие удаления в BLoC
-                        context.read<RecipesBloc>().add(DeleteRecipeEvent(recipe.id));
+                    key: Key(recipe.id),
+                    direction: DismissDirection.endToStart, // Свайп только справа налево
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      color: Colors.red,
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    onDismissed: (direction) {
+                      // Пушим событие удаления в BLoC
+                      context.read<RecipesBloc>().add(DeleteRecipeEvent(recipe.id));
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Рецепт "${recipe.title}" удален')),
-                        );
-                      },
-                      child: Card(
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Рецепт "${recipe.title}" удален')),
+                      );
+                    },
+                    child: Card(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: ListTile(
                         onTap: () {
@@ -92,7 +161,7 @@ class RecipesScreen extends StatelessWidget {
                       ),
                     ),
                   );
-                  },
+                },
               );
             }
             return const SizedBox.shrink();
@@ -118,6 +187,25 @@ class RecipesScreen extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  Recipe createRecipeFromOcr(String recognizedText) {
+    // Разбиваем текст на строки, чтобы попробовать найти название
+    final lines = recognizedText.split('\n').where((line) => line.trim().isNotEmpty).toList();
+
+    // Берем первую непустую строку как заголовок (если текст есть), иначе дефолт
+    final title = lines.isNotEmpty ? lines.first : 'Рецепт со скриншота';
+
+    // Остальной текст (или весь текст целиком) пустим в описание
+    final description = recognizedText;
+
+    return Recipe(
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // простейший уникальный id
+      title: title,
+      description: description,
+      imageUrl: '', // пока нет картинки или можно сохранить путь к скриншоту
+      cookingTimeMinutes: 30, // дефолтное время, которое пользователь потом поправит
     );
   }
 }
