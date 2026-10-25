@@ -1,9 +1,41 @@
-name: iOS Build
+#name: iOS Build
+#
+#on:
+#  push:
+#    branches: [ master ]
+#  pull_request:
+#    branches: [ master ]
+#
+#jobs:
+#  build:
+#    runs-on: macos-14
+#
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v4
+#
+#      - name: Set up Flutter
+#        uses: subosito/flutter-action@v2
+#        with:
+#          channel: 'stable'
+#
+#      - name: Install dependencies
+#        run: flutter pub get
+#
+#      - name: Build iOS
+#        run: flutter build ios --release --no-codesign
+#
+#      - name: Upload iOS Artifact
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: runner-app
+#          path: build/ios/iphoneos/Runner.app
+
+
+name: iOS Simulator Build
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
     branches: [ master ]
 
 jobs:
@@ -22,11 +54,18 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build iOS
-        run: flutter build ios --release --no-codesign
+      # Собираем именно для симулятора (архитектура x86_64 / arm64 для симулятора)
+      - name: Build iOS Simulator App
+        run: flutter build ios --simulator
 
-      - name: Upload iOS Artifact
+      # Запаковываем .app в архив .zip (это нужно для Appetize.io)
+      - name: Archive Simulator App
+        run: |
+          cd build/ios/iphonesimulator
+          zip -r Runner.zip Runner.app
+
+      - name: Upload iOS Simulator Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: runner-app
-          path: build/ios/iphoneos/Runner.app
+          name: ios-simulator-app
+          path: build/ios/iphonesimulator/Runner.zip
