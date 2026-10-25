@@ -66,5 +66,17 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<!-- Access to photo library (selecting recipe screenshots) -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs access to your photo library to select recipe screenshots for text recognition.</string>
+
+    <!-- Access to camera (taking photos of recipes) -->
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs access to your camera to take photos of recipes for text recognition.</string>
+
+    <!-- Permission to save photos to library (iOS 11+) -->
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>This app needs access to save processed recipe images to your photo library.</string>
 </dict>
 </plist>
