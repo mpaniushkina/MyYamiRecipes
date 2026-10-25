@@ -30,7 +30,9 @@ class _RecipesScreenState extends State<RecipesScreen> {
 
       if (recognizedText != null && recognizedText.isNotEmpty) {
         if (!mounted) return;
-        final recipe = createRecipeFromOcr(recognizedText);
+
+        final universalText = universalNormalizeOcr(recognizedText);
+        final recipe = createRecipeFromOcr(universalText);
 
         showModalBottomSheet(
           context: context,
@@ -207,5 +209,52 @@ class _RecipesScreenState extends State<RecipesScreen> {
       imageUrl: '', // пока нет картинки или можно сохранить путь к скриншоту
       cookingTimeMinutes: 30, // дефолтное время, которое пользователь потом поправит
     );
+  }
+
+  String universalNormalizeOcr(String text) {
+    // Словарь визуально похожих латинских и русских букв
+    const Map<String, String> latinToCyrillic = {
+      'a': 'а',
+      'e': 'е',
+      'o': 'о',
+      'p': 'р',
+      'c': 'с',
+      'y': 'у',
+      'x': 'х',
+      'i': 'і', // иногда встречается в украинском/белорусском контексте или специфичных шрифтах
+      'A': 'А',
+      'B': 'В',
+      'E': 'Е',
+      'K': 'К',
+      'M': 'М',
+      'H': 'Н',
+      'O': 'О',
+      'P': 'Р',
+      'C': 'С',
+      'T': 'Т',
+      'X': 'Х',
+    };
+
+    // Разбиваем текст на слова или обрабатываем посимвольно
+    // Простой подход: заменяем символы в словах, где уже есть кириллица,
+    // либо делаем общую замену для заведомо «сломанных» слов.
+
+    List<String> words = text.split(RegExp(r'\s+'));
+    List<String> normalizedWords = words.map((word) {
+      // Проверяем, есть ли в слове хоть одна русская буква
+      bool hasCyrillic = RegExp(r'[а-яА-ЯёЁ]').hasMatch(word);
+
+      if (hasCyrillic) {
+        // Если слово смешанное (например, "canaTMK" -> есть кириллица или намек),
+        // заменяем латинские аналоги на кириллицу
+        return word.split('').map((char) {
+          return latinToCyrillic[char] ?? char;
+        }).join('');
+      }
+
+      return word;
+    }).toList();
+
+    return normalizedWords.join(' ');
   }
 }
