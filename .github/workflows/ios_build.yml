@@ -45,8 +45,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          node-version: '20' # Можно оставить или обновить версию чекаута, но лучше обновить саму структуру ниже
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -62,6 +60,7 @@ jobs:
       - name: Archive Simulator App
         run: |
           cd build/ios/iphonesimulator
+          # Упаковываем так, чтобы Runner.app лежал прямо в корне архива
           zip -r Runner.zip Runner.app
 
       - name: Upload iOS Simulator Artifact
