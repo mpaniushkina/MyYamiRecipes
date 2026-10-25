@@ -45,6 +45,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          node-version: '20' # Можно оставить или обновить версию чекаута, но лучше обновить саму структуру ниже
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -54,11 +56,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Собираем именно для симулятора (архитектура x86_64 / arm64 для симулятора)
       - name: Build iOS Simulator App
         run: flutter build ios --simulator
 
-      # Запаковываем .app в архив .zip (это нужно для Appetize.io)
       - name: Archive Simulator App
         run: |
           cd build/ios/iphonesimulator
