@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import '../models/recipe_model.dart';
 
 class RecipesRemoteDataSource {
-  final Dio _dio = Dio(BaseOptions(baseUrl: 'https://dummyjson.com'));
+  final Dio _dio = Dio(BaseOptions(baseUrl: ''));
 
   Future<List<RecipeModel>> fetchRecipes() async {
     try {

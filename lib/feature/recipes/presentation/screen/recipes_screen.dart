@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:my_yami_recipes/feature/recipes/presentation/screen/recipe_detail_screen.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../../../../services/local_recipe_parser_service.dart';
 import '../../../../services/ocr_service.dart';
 import '../../domain/entities/recipe.dart';
 import '../../domain/repositories/recipes_repository_impl.dart';
@@ -16,7 +20,7 @@ class RecipesScreen extends StatefulWidget {
 
 class _RecipesScreenState extends State<RecipesScreen> {
   final OcrService _ocrService = OcrService();
-  late final recipesBloc = context.read<RecipesBloc>();
+  late final RecipesBloc _recipesBloc;
   bool _isScanning = false;
 
   Future<void> _handleScanScreenshot() async {
@@ -27,19 +31,21 @@ class _RecipesScreenState extends State<RecipesScreen> {
     try {
       // 1. Выбираем скриншот и распознаем текст
       final String? recognizedText = await _ocrService.pickAndRecognizeText();
-
+      // final String? recognizedText = await TesseractOcrService().pickAndRecognizeText();
       if (recognizedText != null && recognizedText.isNotEmpty) {
         if (!mounted) return;
 
-        final universalText = universalNormalizeOcr(recognizedText);
-        final recipe = createRecipeFromOcr(universalText);
+        // final universalText = universalNormalizeOcr(recognizedText);
+        final recipe = createRecipeFromOcr(recognizedText);
+        // final recipe = await GroqRecipeParserService.parseRecipe(recognizedText);
+        // final recipe = await DeepSeekRecipeParserService.parseRecipe(recognizedText);
 
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
           builder: (sheetContext) {
             return BlocProvider.value(
-              value: recipesBloc, // передаем уже пойманный блок
+              value: _recipesBloc, // передаем уже пойманный блок
               child: AddRecipeBottomSheet(recipeToEdit: recipe),
             );
           },
@@ -60,22 +66,26 @@ class _RecipesScreenState extends State<RecipesScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _recipesBloc = RecipesBloc(RecipesRepositoryImpl())..add(LoadRecipesEvent());
+  }
+
+  @override
   void dispose() {
-    _ocrService.dispose(); // Не забываем закрыть сканнер при уничтожении экрана
+    _ocrService.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Внедряем зависимость и сразу кидаем событие загрузки
-    return BlocProvider(
-      create: (context) => RecipesBloc(RecipesRepositoryImpl())..add(LoadRecipesEvent()),
+    return BlocProvider.value(
+      value: _recipesBloc,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Рецепты'),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
-            // Кнопка сканирования скриншота в AppBar
             IconButton(
               icon: _isScanning
                   ? const SizedBox(
@@ -86,6 +96,17 @@ class _RecipesScreenState extends State<RecipesScreen> {
                   : const Icon(Icons.document_scanner),
               tooltip: 'Сканировать',
               onPressed: _isScanning ? null : _handleScanScreenshot,
+            ),
+            IconButton(
+              icon: _isScanning
+                  ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+                  : const Icon(Icons.add_box),
+              tooltip: 'Добавить из буфера',
+              onPressed: _isScanning ? null : onPasteButtonPressed,
             ),
           ],
         ),
@@ -98,16 +119,14 @@ class _RecipesScreenState extends State<RecipesScreen> {
             } else if (state is RecipesLoaded) {
               final recipes = state.recipes;
 
-              // Аналог LazyColumn / RecyclerView
               return ListView.builder(
                 itemCount: recipes.length,
                 itemBuilder: (context, index) {
                   final recipe = recipes[index];
 
                   return Dismissible(
-                    // Уникальный ключ для каждого элемента обязателен
                     key: Key(recipe.id),
-                    direction: DismissDirection.endToStart, // Свайп только справа налево
+                    direction: DismissDirection.endToStart,
                     background: Container(
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -115,7 +134,6 @@ class _RecipesScreenState extends State<RecipesScreen> {
                       child: const Icon(Icons.delete, color: Colors.white),
                     ),
                     onDismissed: (direction) {
-                      // Пушим событие удаления в BLoC
                       context.read<RecipesBloc>().add(DeleteRecipeEvent(recipe.id));
 
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -134,7 +152,6 @@ class _RecipesScreenState extends State<RecipesScreen> {
                           );
                         },
                         onLongPress: () {
-                          // Открываем ту же форму, но передаем туда текущий рецепт для изменения
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -148,17 +165,14 @@ class _RecipesScreenState extends State<RecipesScreen> {
                         },
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          // Заглушка под картинку из сети
-                          child: Image.network(
-                            recipe.imageUrl,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.fastfood),
+                          child: SvgPicture.asset(
+                            AppStrings.getSvgAssetForCategory(recipe.category),
+                            width: 48,
+                            height: 48,
                           ),
                         ),
                         title: Text(recipe.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(recipe.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(recipe.description.toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
                         trailing: Text('${recipe.cookingTimeMinutes} мин'),
                       ),
                     ),
@@ -203,58 +217,34 @@ class _RecipesScreenState extends State<RecipesScreen> {
     final description = recognizedText;
 
     return Recipe(
-      id: DateTime.now().millisecondsSinceEpoch.toString(), // простейший уникальный id
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
       description: description,
-      imageUrl: '', // пока нет картинки или можно сохранить путь к скриншоту
-      cookingTimeMinutes: 30, // дефолтное время, которое пользователь потом поправит
+      imageUrl: '',
+      cookingTimeMinutes: 30,
+      category: '',
+      calories: 0,
+      ingredients: [],
+      steps: [],
     );
   }
 
-  String universalNormalizeOcr(String text) {
-    // Словарь визуально похожих латинских и русских букв
-    const Map<String, String> latinToCyrillic = {
-      'a': 'а',
-      'e': 'е',
-      'o': 'о',
-      'p': 'р',
-      'c': 'с',
-      'y': 'у',
-      'x': 'х',
-      'i': 'і', // иногда встречается в украинском/белорусском контексте или специфичных шрифтах
-      'A': 'А',
-      'B': 'В',
-      'E': 'Е',
-      'K': 'К',
-      'M': 'М',
-      'H': 'Н',
-      'O': 'О',
-      'P': 'Р',
-      'C': 'С',
-      'T': 'Т',
-      'X': 'Х',
-    };
+  Future<void> onPasteButtonPressed() async {
+    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text == null || data!.text!.isEmpty) return;
 
-    // Разбиваем текст на слова или обрабатываем посимвольно
-    // Простой подход: заменяем символы в словах, где уже есть кириллица,
-    // либо делаем общую замену для заведомо «сломанных» слов.
+    // Парсим сырой скопированный текст в структурированный объект
+    Recipe? recipe = LocalRecipeParserService.parse(data.text!);
 
-    List<String> words = text.split(RegExp(r'\s+'));
-    List<String> normalizedWords = words.map((word) {
-      // Проверяем, есть ли в слове хоть одна русская буква
-      bool hasCyrillic = RegExp(r'[а-яА-ЯёЁ]').hasMatch(word);
-
-      if (hasCyrillic) {
-        // Если слово смешанное (например, "canaTMK" -> есть кириллица или намек),
-        // заменяем латинские аналоги на кириллицу
-        return word.split('').map((char) {
-          return latinToCyrillic[char] ?? char;
-        }).join('');
-      }
-
-      return word;
-    }).toList();
-
-    return normalizedWords.join(' ');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return BlocProvider.value(
+          value: _recipesBloc,
+          child: AddRecipeBottomSheet(recipeToEdit: recipe, createNewRecipe: true),
+        );
+      },
+    );
   }
 }

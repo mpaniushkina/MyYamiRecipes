@@ -9,7 +9,6 @@ class RecipesBloc extends Bloc<RecipesEvent, RecipesState> {
   final RecipesRepository _repository;
 
   RecipesBloc(this._repository) : super(RecipesInitial()) {
-    // Подписываемся на события (как Intent в MVI)
     on<LoadRecipesEvent>(_onLoadRecipes);
     on<AddRecipeEvent>(_onAddRecipe);
     on<DeleteRecipeEvent>(_onDeleteRecipe);
@@ -35,7 +34,6 @@ class RecipesBloc extends Bloc<RecipesEvent, RecipesState> {
       ) async {
     try {
       await _repository.addRecipe(event.recipe);
-      // После добавления заново запрашиваем список
       final recipes = await _repository.getRecipes();
       emit(RecipesLoaded(recipes));
     } catch (e) {
