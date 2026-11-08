@@ -23,48 +23,6 @@ class _RecipesScreenState extends State<RecipesScreen> {
   late final RecipesBloc _recipesBloc;
   bool _isScanning = false;
 
-  Future<void> _handleScanScreenshot() async {
-    setState(() {
-      _isScanning = true;
-    });
-
-    try {
-      // 1. Выбираем скриншот и распознаем текст
-      final String? recognizedText = await _ocrService.pickAndRecognizeText();
-      // final String? recognizedText = await TesseractOcrService().pickAndRecognizeText();
-      if (recognizedText != null && recognizedText.isNotEmpty) {
-        if (!mounted) return;
-
-        // final universalText = universalNormalizeOcr(recognizedText);
-        final recipe = createRecipeFromOcr(recognizedText);
-        // final recipe = await GroqRecipeParserService.parseRecipe(recognizedText);
-        // final recipe = await DeepSeekRecipeParserService.parseRecipe(recognizedText);
-
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          builder: (sheetContext) {
-            return BlocProvider.value(
-              value: _recipesBloc, // передаем уже пойманный блок
-              child: AddRecipeBottomSheet(recipeToEdit: recipe),
-            );
-          },
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка сканирования: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isScanning = false;
-        });
-      }
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -112,75 +70,165 @@ class _RecipesScreenState extends State<RecipesScreen> {
         ),
         body: BlocBuilder<RecipesBloc, RecipesState>(
           builder: (context, state) {
-            if (state is RecipesLoading || state is RecipesInitial) {
+            if (state.isLoading) {
               return const Center(child: CircularProgressIndicator());
-            } else if (state is RecipesError) {
-              return Center(child: Text('Ошибка: ${state.message}'));
-            } else if (state is RecipesLoaded) {
-              final recipes = state.recipes;
+            }
 
-              return ListView.builder(
-                itemCount: recipes.length,
-                itemBuilder: (context, index) {
-                  final recipe = recipes[index];
-
-                  return Dismissible(
-                    key: Key(recipe.id),
-                    direction: DismissDirection.endToStart,
-                    background: Container(
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      color: Colors.red,
-                      child: const Icon(Icons.delete, color: Colors.white),
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: 'Поиск по названию',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
                     ),
-                    onDismissed: (direction) {
-                      context.read<RecipesBloc>().add(DeleteRecipeEvent(recipe.id));
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Рецепт "${recipe.title}" удален')),
-                      );
+                    onChanged: (value) {
+                      context.read<RecipesBloc>().add(FilterRecipesEvent(searchQuery: value));
                     },
-                    child: Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RecipeDetailScreen(recipe: recipe),
-                            ),
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.local_fire_department, size: 18, color: Colors.deepOrange),
+                      const SizedBox(width: 4),
+                      Text(
+                        state.maxCalories == null
+                            ? 'Калории: любые'
+                            : 'До ${state.maxCalories} ккал',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      if (state.maxCalories != null)
+                        TextButton(
+                          onPressed: () {
+                            context.read<RecipesBloc>().add(
+                              FilterRecipesEvent(clearCalories: true),
+                            );
+                          },
+                          child: const Text('Сбросить калории'),
+                        ),
+                    ],
+                  ),
+                ),
+
+                Slider(
+                  value: (state.maxCalories ?? 100).toDouble(),
+                  min: 100,
+                  max: 3000, // Верхняя граница слайдера
+                  divisions: 28, // Шаг деления (каждые 50 ккал)
+                  label: '${state.maxCalories ?? 100} ккал',
+                  onChanged: (double value) {
+                    context.read<RecipesBloc>().add(
+                      FilterRecipesEvent(maxCalories: value.toInt()),
+                    );
+                  },
+                ),
+
+                SizedBox(
+                  height: 50,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    children: [
+                      'Все',
+                      ...AppStrings.recipeCategories,
+                    ].map((categoryName) {
+                      // 1. Четкое вычисление подсветки для каждого чипа
+                      final bool isSelected = (categoryName == 'Все')
+                          ? (state.selectedCategory == null || state.selectedCategory!.isEmpty)
+                          : (state.selectedCategory == categoryName);
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text(categoryName),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            context.read<RecipesBloc>().add(
+                              FilterRecipesEvent(category: categoryName),
+                            );
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                Expanded(
+                  child: state.filteredRecipes.isEmpty
+                      ? const Center(child: Text('Рецепты не найдены'))
+                      : ListView.builder(
+                    itemCount: state.filteredRecipes.length,
+                    itemBuilder: (context, index) {
+                      final recipe = state.filteredRecipes[index];
+
+                      return Dismissible(
+                        key: Key(recipe.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          color: Colors.red,
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        onDismissed: (direction) {
+                          context.read<RecipesBloc>().add(DeleteRecipeEvent(recipe.id));
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Рецепт "${recipe.title}" удален')),
                           );
                         },
-                        onLongPress: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            builder: (sheetContext) {
-                              return BlocProvider.value(
-                                value: BlocProvider.of<RecipesBloc>(context),
-                                child: AddRecipeBottomSheet(recipeToEdit: recipe),
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: ListTile(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => RecipeDetailScreen(recipe: recipe),
+                                ),
                               );
                             },
-                          );
-                        },
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SvgPicture.asset(
-                            AppStrings.getSvgAssetForCategory(recipe.category),
-                            width: 48,
-                            height: 48,
+                            onLongPress: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (sheetContext) {
+                                  return BlocProvider.value(
+                                    value: BlocProvider.of<RecipesBloc>(context),
+                                    child: AddRecipeBottomSheet(recipeToEdit: recipe),
+                                  );
+                                },
+                              );
+                            },
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SvgPicture.asset(
+                                AppStrings.getSvgAssetForCategory(recipe.category),
+                                width: 48,
+                                height: 48,
+                              ),
+                            ),
+                            title: Text(recipe.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(recipe.description.toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                            trailing: Text('${recipe.cookingTimeMinutes} мин'),
                           ),
                         ),
-                        title: Text(recipe.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(recipe.description.toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
-                        trailing: Text('${recipe.cookingTimeMinutes} мин'),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }
-            return const SizedBox.shrink();
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
           },
         ),
         floatingActionButton: Builder(
@@ -246,5 +294,47 @@ class _RecipesScreenState extends State<RecipesScreen> {
         );
       },
     );
+  }
+
+  Future<void> _handleScanScreenshot() async {
+    setState(() {
+      _isScanning = true;
+    });
+
+    try {
+      // 1. Выбираем скриншот и распознаем текст
+      final String? recognizedText = await _ocrService.pickAndRecognizeText();
+      // final String? recognizedText = await TesseractOcrService().pickAndRecognizeText();
+      if (recognizedText != null && recognizedText.isNotEmpty) {
+        if (!mounted) return;
+
+        // final universalText = universalNormalizeOcr(recognizedText);
+        final recipe = createRecipeFromOcr(recognizedText);
+        // final recipe = await GroqRecipeParserService.parseRecipe(recognizedText);
+        // final recipe = await DeepSeekRecipeParserService.parseRecipe(recognizedText);
+
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (sheetContext) {
+            return BlocProvider.value(
+              value: _recipesBloc, // передаем уже пойманный блок
+              child: AddRecipeBottomSheet(recipeToEdit: recipe),
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка сканирования: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+      }
+    }
   }
 }

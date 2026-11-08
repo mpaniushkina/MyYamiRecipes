@@ -13,18 +13,27 @@ class RecipesBloc extends Bloc<RecipesEvent, RecipesState> {
     on<AddRecipeEvent>(_onAddRecipe);
     on<DeleteRecipeEvent>(_onDeleteRecipe);
     on<UpdateRecipeEvent>(_onUpdateRecipe);
+    on<FilterRecipesEvent>(_onFilterRecipes);
   }
 
   Future<void> _onLoadRecipes(
       LoadRecipesEvent event,
       Emitter<RecipesState> emit,
       ) async {
-    emit(RecipesLoading());
+    emit(state.copyWith(isLoading: true));
+
     try {
       final recipes = await _repository.getRecipes();
-      emit(RecipesLoaded(recipes));
+
+      emit(state.copyWith(
+        allRecipes: recipes,
+        filteredRecipes: recipes,
+        isLoading: false,
+      ));
     } catch (e) {
-      emit(RecipesError(e.toString()));
+      emit(state.copyWith(
+        isLoading: false,
+      ));
     }
   }
 
@@ -65,5 +74,45 @@ class RecipesBloc extends Bloc<RecipesEvent, RecipesState> {
     } catch (e) {
       emit(RecipesError(e.toString()));
     }
+  }
+
+  void _onFilterRecipes(FilterRecipesEvent event, Emitter<RecipesState> emit) {
+    final query = event.searchQuery ?? state.searchQuery;
+
+    final bool shouldClearCategory = event.category == 'Все' || (event.category != null && event.category!.isEmpty);
+    final String? category = shouldClearCategory
+        ? null
+        : (event.category ?? state.selectedCategory);
+
+    final bool shouldClearCalories = event.clearCalories;
+    final int? maxCalories = shouldClearCalories
+        ? null
+        : (event.maxCalories ?? state.maxCalories);
+
+    List<Recipe> tempRecipes = List.from(state.allRecipes);
+
+    if (query.isNotEmpty) {
+      tempRecipes = tempRecipes.where((recipe) =>
+          recipe.title.toLowerCase().contains(query.toLowerCase())).toList();
+    }
+
+    if (category != null && category.isNotEmpty) {
+      tempRecipes = tempRecipes.where((recipe) => recipe.category == category).toList();
+    }
+
+    if (maxCalories != null && maxCalories > 0) {
+      tempRecipes = tempRecipes.where((recipe) {
+        return recipe.calories! <= maxCalories && recipe.calories! > 0;
+      }).toList();
+    }
+
+    emit(state.copyWith(
+      filteredRecipes: tempRecipes,
+      searchQuery: query,
+      selectedCategory: category,
+      clearCategory: shouldClearCategory,
+      maxCalories: maxCalories,
+      clearCalories: shouldClearCalories,
+    ));
   }
 }
