@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../l10n/l10n_helpers.dart';
 import '../../../recipes/domain/entities/recipe.dart';
 import '../../../recipes/presentation/screen/recipe_detail_screen.dart';
 import '../../data/special_menu_storage.dart';
@@ -11,22 +12,26 @@ import '../widget/recipe_picker_sheet.dart';
 import '../widget/shopping_list_view.dart';
 import '../widget/summary_bar.dart';
 
+/// Menu name for display, or a localized "Untitled".
+String menuDisplayName(BuildContext context, SpecialMenu menu) =>
+    menu.name.trim().isEmpty ? context.l10n.untitled : menu.name.trim();
+
 /// Asks the user to confirm deleting [menu]. Returns true if confirmed.
 Future<bool> confirmDeleteSpecialMenu(BuildContext context, SpecialMenu menu) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       icon: const Icon(Icons.delete_outline),
-      title: const Text('Удалить меню?'),
-      content: Text('«${menu.displayName}» и его список продуктов будут удалены.'),
+      title: Text(context.l10n.deleteMenuQuestion),
+      content: Text(context.l10n.deleteMenuContent(menuDisplayName(context, menu))),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(dialogContext, false),
-          child: const Text('Отмена'),
+          child: Text(context.l10n.cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(dialogContext, true),
-          child: const Text('Удалить'),
+          child: Text(context.l10n.delete),
         ),
       ],
     ),
@@ -103,7 +108,7 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
 
     final selected = await RecipePickerSheet.pickMany(
       context,
-      title: 'Блюда для меню',
+      title: context.l10n.dishesForMenu,
       recipes: sorted,
       selectedIds: _menu.recipeIds.toSet(),
     );
@@ -125,7 +130,7 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
     ));
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('«${recipe.title}» убрано из меню')));
+      ..showSnackBar(SnackBar(content: Text(context.l10n.dishRemoved(recipe.title))));
   }
 
   void _setChecked(String key, bool checked) {
@@ -149,20 +154,20 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_menu.name.trim().isEmpty ? 'Новое меню' : _menu.name.trim()),
+        title: Text(_menu.name.trim().isEmpty ? context.l10n.newMenu : _menu.name.trim()),
         backgroundColor: colorScheme.inversePrimary,
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            tooltip: 'Удалить меню',
+            tooltip: context.l10n.deleteMenu,
             onPressed: _deleteMenu,
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.celebration), text: 'Блюда'),
-            Tab(icon: Icon(Icons.shopping_cart), text: 'Продукты'),
+          tabs: [
+            Tab(icon: const Icon(Icons.celebration), text: context.l10n.tabDishes),
+            Tab(icon: const Icon(Icons.shopping_cart), text: context.l10n.tabGroceries),
           ],
         ),
       ),
@@ -176,8 +181,8 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
             onToggle: _setChecked,
             onClearChecked: _clearChecked,
             emptyText: _menu.recipeIds.isEmpty
-                ? 'Добавьте блюда в меню, и здесь появится список продуктов'
-                : 'В выбранных рецептах нет ингредиентов',
+                ? context.l10n.addDishesForGroceries
+                : null,
           ),
         ],
       ),
@@ -185,7 +190,7 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
           ? FloatingActionButton.extended(
               onPressed: _addDishes,
               icon: const Icon(Icons.add),
-              label: const Text('Добавить блюда'),
+              label: Text(context.l10n.addDishes),
             )
           : null,
     );
@@ -208,8 +213,8 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
             autofocus: widget.isNew,
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
-              labelText: 'Название меню',
-              hintText: 'Например, Новый год',
+              labelText: context.l10n.menuName,
+              hintText: context.l10n.menuNameHint,
               prefixIcon: const Icon(Icons.edit_note),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               filled: true,
@@ -219,19 +224,19 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
           ),
         ),
         if (widget.recipes.isEmpty)
-          const _EmptyHint(
+          _EmptyHint(
             icon: Icons.menu_book,
-            text: 'Сначала добавьте рецепты на главном экране',
+            text: context.l10n.addRecipesFirst,
           )
         else if (dishes.isEmpty)
-          const _EmptyHint(
+          _EmptyHint(
             icon: Icons.celebration,
-            text: 'Нажмите «Добавить блюда» и найдите нужные рецепты по названию',
+            text: context.l10n.addDishesEmptyHint,
           )
         else ...[
           SummaryBar(
             icon: Icons.local_fire_department,
-            text: '${dishCountLabel(dishes.length)} · $totalCalories ккал',
+            text: '${context.l10n.dishCount(dishes.length)} · ${context.l10n.kcalValue(totalCalories)}',
           ),
           ..._buildGroupedDishes(context, dishes),
         ],
@@ -250,6 +255,7 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
 
     final groups = <String, List<Recipe>>{};
     for (final r in dishes) {
+      // Group by the stored category; 'Другое' is the stored "other" value.
       final category = (r.category == null || r.category!.isEmpty) ? 'Другое' : r.category!;
       groups.putIfAbsent(category, () => []).add(r);
     }
@@ -260,7 +266,7 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Text(
-            category,
+            context.l10n.categoryLabel(category),
             style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
           ),
         ),
@@ -277,10 +283,13 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
                 ),
               ),
               title: Text(recipe.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${recipe.calories ?? 0} ккал · ${recipe.cookingTimeMinutes ?? 0} мин'),
+              subtitle: Text(
+                '${context.l10n.kcalValue(recipe.calories ?? 0)} · '
+                '${context.l10n.minutesValue(recipe.cookingTimeMinutes ?? 0)}',
+              ),
               trailing: IconButton(
                 icon: const Icon(Icons.remove_circle_outline),
-                tooltip: 'Убрать из меню',
+                tooltip: context.l10n.removeFromMenu,
                 onPressed: () => _removeDish(recipe),
               ),
               onTap: () => Navigator.push(

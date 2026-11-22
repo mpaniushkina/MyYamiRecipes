@@ -35,7 +35,7 @@ class WeeklyMenuStorage {
         });
       }).toList();
 
-      if (days.length != weekDays.length) return null;
+      if (days.length != daysInWeek) return null;
 
       final checked = (data['checked'] as List<dynamic>? ?? const [])
           .map((e) => e as String)

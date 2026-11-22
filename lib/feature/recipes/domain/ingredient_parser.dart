@@ -9,32 +9,50 @@ import 'entities/recipe.dart';
 class IngredientParser {
   IngredientParser._();
 
-  /// Unit spellings (regex) → normalized unit. Order matters: longer/more
+  /// Unit spellings (regex) → normalized (stored) unit. Order matters: longer/more
   /// specific forms first ("кг" before "г", "ст. л." before "стакан").
+  /// English spellings are accepted too (the edit form shows localized units),
+  /// but the stored unit is always the Russian one.
   static const List<(String, String)> _units = [
-    (r'кг\.?|килограмм[а-яё]*', 'кг'),
-    (r'мг\.?|миллиграмм[а-яё]*', 'мг'),
-    (r'грамм[а-яё]*|гр\.?|г\.?', 'г'),
-    (r'мл\.?|миллилитр[а-яё]*', 'мл'),
-    (r'литр[а-яё]*|л\.?', 'л'),
-    (r'ст\.?\s*л\.?|столов[а-яё]*\s+ложк[а-яё]*', 'ст. л.'),
-    (r'ч\.?\s*л\.?|чайн[а-яё]*\s+ложк[а-яё]*', 'ч. л.'),
-    (r'стакан[а-яё]*|стак\.?', 'стакан'),
-    (r'штук[а-яё]*|шт\.?', 'шт.'),
-    (r'зубч[а-яё]*|зуб\.?', 'зубчик'),
-    (r'щепот[а-яё]*', 'щепотка'),
-    (r'пуч[а-яё]*', 'пучок'),
-    (r'банк[а-яё]*|банок', 'банка'),
-    (r'упаковк[а-яё]*|упак\.?|уп\.', 'уп.'),
-    (r'пакетик[а-яё]*|пакет[а-яё]*', 'пакетик'),
-    (r'ломтик[а-яё]*|ломт[а-яё]*', 'ломтик'),
-    (r'кусоч[а-яё]*|кус\.?', 'кусочек'),
-    (r'дольк[а-яё]*|долек', 'долька'),
-    (r'веточ[а-яё]*|веток', 'веточка'),
-    (r'лист[а-яё]*', 'лист'),
-    (r'головк[а-яё]*|голов[а-яё]*', 'головка'),
-    (r'порци[а-яё]*|порц\.?', 'порция'),
+    (r'кг\.?|килограмм[а-яё]*|kg|kilograms?', 'кг'),
+    (r'мг\.?|миллиграмм[а-яё]*|mg|milligrams?', 'мг'),
+    (r'грамм[а-яё]*|гр\.?|г\.?|grams?|gr|g', 'г'),
+    (r'мл\.?|миллилитр[а-яё]*|ml|millilit(?:er|re)s?', 'мл'),
+    (r'литр[а-яё]*|л\.?|lit(?:er|re)s?|l', 'л'),
+    (r'ст\.?\s*л\.?|столов[а-яё]*\s+ложк[а-яё]*|tbsp|tablespoons?', 'ст. л.'),
+    (r'ч\.?\s*л\.?|чайн[а-яё]*\s+ложк[а-яё]*|tsp|teaspoons?', 'ч. л.'),
+    (r'стакан[а-яё]*|стак\.?|cups?', 'стакан'),
+    (r'штук[а-яё]*|шт\.?|pcs', 'шт.'),
+    (r'зубч[а-яё]*|зуб\.?|cloves?', 'зубчик'),
+    (r'щепот[а-яё]*|pinch(?:es)?', 'щепотка'),
+    (r'пуч[а-яё]*|bunch(?:es)?', 'пучок'),
+    (r'банк[а-яё]*|банок|cans?', 'банка'),
+    (r'упаковк[а-яё]*|упак\.?|уп\.|packs?', 'уп.'),
+    (r'пакетик[а-яё]*|пакет[а-яё]*|sachets?', 'пакетик'),
+    (r'ломтик[а-яё]*|ломт[а-яё]*|slices?', 'ломтик'),
+    (r'кусоч[а-яё]*|кус\.?|pieces?', 'кусочек'),
+    (r'дольк[а-яё]*|долек|wedges?', 'долька'),
+    (r'веточ[а-яё]*|веток|sprigs?', 'веточка'),
+    (r'лист[а-яё]*|leaf|leaves', 'лист'),
+    (r'головк[а-яё]*|голов[а-яё]*|heads?', 'головка'),
+    (r'порци[а-яё]*|порц\.?|servings?', 'порция'),
   ];
+
+  /// Non-numeric amounts: spelling → stored (Russian) phrase.
+  static const Map<String, String> _phrases = {
+    'по вкусу': 'по вкусу',
+    'по желанию': 'по желанию',
+    'для подачи': 'для подачи',
+    'для жарки': 'для жарки',
+    'на кончике ножа': 'на кончике ножа',
+    'to taste': 'по вкусу',
+    'optional': 'по желанию',
+    'for serving': 'для подачи',
+    'for frying': 'для жарки',
+    'a pinch': 'на кончике ножа',
+  };
+
+  static final String _phraseAlternatives = _phrases.keys.join('|');
 
   /// "400", "1,5", "1/2", "2-3", "½".
   static const String _amount =
@@ -51,7 +69,7 @@ class IngredientParser {
   );
 
   static final RegExp _toTaste = RegExp(
-    r'^(?:по вкусу|по желанию|для подачи|для жарки|на кончике ножа)$',
+    '^(?:$_phraseAlternatives)\$',
     caseSensitive: false,
   );
 
@@ -74,7 +92,7 @@ class IngredientParser {
   );
 
   static final RegExp _toTasteSuffix = RegExp(
-    r'^(.+?)[\s,—–-]+(по вкусу|по желанию|для подачи|для жарки|на кончике ножа)\.?$',
+    '^(.+?)[\\s,—–-]+($_phraseAlternatives)\\.?\$',
     caseSensitive: false,
   );
 
@@ -113,7 +131,7 @@ class IngredientParser {
     // 5. "Соль по вкусу".
     final toTaste = _toTasteSuffix.firstMatch(line);
     if (toTaste != null) {
-      return _build(toTaste.group(1)!, (toTaste.group(2)!.toLowerCase(), ''));
+      return _build(toTaste.group(1)!, (_storedPhrase(toTaste.group(2)!), ''));
     }
 
     return IngredientEntity(name: _capitalize(line), amount: '', unit: '');
@@ -123,7 +141,7 @@ class IngredientParser {
   static (String, String)? _parseQuantity(String text) {
     final s = text.trim();
     if (s.isEmpty) return null;
-    if (_toTaste.hasMatch(s)) return (s.toLowerCase(), '');
+    if (_toTaste.hasMatch(s)) return (_storedPhrase(s), '');
 
     final match = _quantityOnly.firstMatch(s);
     if (match == null) return null;
@@ -133,6 +151,9 @@ class IngredientParser {
     // "Мука — стакан" means one unit.
     return (amount ?? '1', _normalizeUnit(unit));
   }
+
+  static String _storedPhrase(String phrase) =>
+      _phrases[phrase.trim().toLowerCase()] ?? phrase.trim().toLowerCase();
 
   static String _normalizeUnit(String? unit) {
     if (unit == null || unit.trim().isEmpty) return '';

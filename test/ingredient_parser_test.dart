@@ -41,6 +41,17 @@ void main() {
     check('Иван-чай', 'Иван-чай', '', '');
   });
 
+  test('English spellings are stored as Russian units', () {
+    check('Flour — 400 g', 'Flour', '400', 'г');
+    check('Milk — 1,5 l', 'Milk', '1,5', 'л');
+    check('Sugar — 2 tbsp', 'Sugar', '2', 'ст. л.');
+    check('Garlic 3 cloves', 'Garlic', '3', 'зубчик');
+    check('Salt — to taste', 'Salt', 'по вкусу', '');
+    check('2 cups flour', 'Flour', '2', 'стакан');
+    check('2 garlic', 'Garlic', '2', '');
+    check('Bay — 2 leaves', 'Bay', '2', 'лист');
+  });
+
   test('displayText round-trips', () {
     for (final line in ['Творог 5% — 400 г', 'Соль — по вкусу', 'Ваниль', 'Чеснок — 2-3 зубчик']) {
       final first = IngredientParser.parse(line);

@@ -1,5 +1,6 @@
 class AppStrings {
-  // Список категорий для рецептов
+  // Recipe categories. These are stored values (kept in Russian); display names
+  // come from l10n via AppLocalizations.categoryLabel().
   static const List<String> recipeCategories = [
     'Завтраки',
     'Супы',
@@ -26,8 +27,4 @@ class AppStrings {
   static String getSvgAssetForCategory(String? category) {
     return categorySvgAssets[category] ?? categorySvgAssets['Другое']!;
   }
-
-  static const String appTitle = 'My Yami Recipes';
-  static const String saveButton = 'Сохранить';
-  static const String categoryLabel = 'Категория';
 }

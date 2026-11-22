@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../l10n/l10n_helpers.dart';
 import '../../domain/entities/recipe.dart';
 
 class RecipeDetailScreen extends StatelessWidget {
@@ -55,7 +56,7 @@ class RecipeDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${recipe.calories} ккал',
+                              context.l10n.kcalValue(recipe.calories ?? 0),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -76,7 +77,7 @@ class RecipeDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    recipe.category.toString(),
+                    context.l10n.categoryLabel(recipe.category),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -95,13 +96,13 @@ class RecipeDetailScreen extends StatelessWidget {
                       ),
                       Chip(
                         avatar: const Icon(Icons.timer, size: 18),
-                        label: Text('${recipe.cookingTimeMinutes} мин'),
+                        label: Text(context.l10n.minutesValue(recipe.cookingTimeMinutes ?? 0)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Ингридиенты',
+                    context.l10n.ingredients,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -120,10 +121,10 @@ class RecipeDetailScreen extends StatelessWidget {
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
                           ),
-                          if (ingredient.quantityLabel.isNotEmpty) ...[
+                          if (context.l10n.quantity(ingredient.amount, ingredient.unit).isNotEmpty) ...[
                             const SizedBox(width: 12),
                             Text(
-                              ingredient.quantityLabel,
+                              context.l10n.quantity(ingredient.amount, ingredient.unit),
                               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.bold,
@@ -136,7 +137,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   if (recipe.description.toString().isNotEmpty) ...[
                     Text(
-                      'Описание',
+                      context.l10n.description,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -149,7 +150,7 @@ class RecipeDetailScreen extends StatelessWidget {
                   ],
                   if (recipe.steps.toString().isNotEmpty) ...[
                     Text(
-                      'Шаги',
+                      context.l10n.steps,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../recipes/domain/entities/recipe.dart';
+import '../../../../l10n/l10n_helpers.dart';
 
 /// Result of a single-choice pick. `recipe == null` means "no dish".
 class RecipePickResult {
@@ -128,13 +129,13 @@ class _RecipePickerSheetState extends State<RecipePickerSheet> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Поиск по названию',
+                labelText: context.l10n.searchByTitle,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _query.isEmpty
                     ? null
                     : IconButton(
                         icon: const Icon(Icons.close),
-                        tooltip: 'Очистить',
+                        tooltip: context.l10n.clear,
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _query = '');
@@ -150,13 +151,13 @@ class _RecipePickerSheetState extends State<RecipePickerSheet> {
           if (widget.allowEmpty && query.isEmpty)
             ListTile(
               leading: const Icon(Icons.clear),
-              title: const Text('Без блюда'),
+              title: Text(context.l10n.noDish),
               onTap: () => Navigator.pop(context, const RecipePickResult(null)),
             ),
           const Divider(height: 1),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(child: Text('Рецепты не найдены'))
+                ? Center(child: Text(context.l10n.recipesNotFound))
                 : ListView.builder(
                     controller: controller,
                     itemCount: filtered.length,
@@ -171,7 +172,9 @@ class _RecipePickerSheetState extends State<RecipePickerSheet> {
                           height: 36,
                         ),
                         title: Text(r.title),
-                        subtitle: Text('${r.category ?? ''} · ${r.calories ?? 0} ккал'),
+                        subtitle: Text(
+                          '${context.l10n.categoryLabel(r.category)} · ${context.l10n.kcalValue(r.calories ?? 0)}',
+                        ),
                         trailing: widget.multiSelect
                             ? Checkbox(value: isSelected, onChanged: (_) => _onRecipeTap(r))
                             : null,
@@ -189,7 +192,7 @@ class _RecipePickerSheetState extends State<RecipePickerSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     icon: const Icon(Icons.check),
-                    label: Text('Готово (${_selected.length})'),
+                    label: Text(context.l10n.doneCount(_selected.length)),
                     onPressed: () => Navigator.pop(context, _selected),
                   ),
                 ),

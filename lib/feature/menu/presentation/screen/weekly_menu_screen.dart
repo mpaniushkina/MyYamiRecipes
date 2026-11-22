@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../l10n/l10n_helpers.dart';
 import '../../../recipes/domain/entities/recipe.dart';
 import '../../../recipes/presentation/screen/recipe_detail_screen.dart';
 import '../../data/weekly_menu_storage.dart';
@@ -89,13 +90,13 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
 
   // A plain tap only shows a hint, so the current menu can't be lost by accident.
   void _onRegenerateTap() {
-    _showSnackBar('Удерживайте кнопку, чтобы составить новое меню');
+    _showSnackBar(context.l10n.holdForNewMenu);
   }
 
   void _onRegenerateLongPress() {
     HapticFeedback.mediumImpact();
     _generate();
-    _showSnackBar('Новое меню составлено');
+    _showSnackBar(context.l10n.newMenuCreated);
   }
 
   @override
@@ -106,7 +107,7 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Меню на неделю'),
+          title: Text(context.l10n.weeklyMenu),
           backgroundColor: colorScheme.inversePrimary,
           actions: [
             _RegenerateButton(
@@ -115,10 +116,10 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
               onTap: _onRegenerateTap,
             ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.calendar_month), text: 'Меню'),
-              Tab(icon: Icon(Icons.shopping_cart), text: 'Продукты'),
+              Tab(icon: const Icon(Icons.calendar_month), text: context.l10n.tabMenu),
+              Tab(icon: const Icon(Icons.shopping_cart), text: context.l10n.tabGroceries),
             ],
           ),
         ),
@@ -146,8 +147,7 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
       children: [
         SummaryBar(
           icon: Icons.local_fire_department,
-          text: 'Всего за неделю: $weekCalories ккал · '
-              'в среднем ${(weekCalories / weekDays.length).round()} ккал/день',
+          text: context.l10n.weekCaloriesSummary(weekCalories, (weekCalories / daysInWeek).round()),
         ),
         for (var i = 0; i < _menu.length; i++) _buildDayCard(context, i),
       ],
@@ -170,7 +170,7 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
             child: Row(
               children: [
                 Text(
-                  weekDays[dayIndex],
+                  context.l10n.weekDay(dayIndex),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -181,7 +181,7 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
                 const Icon(Icons.local_fire_department, size: 16, color: Colors.deepOrange),
                 const SizedBox(width: 4),
                 Text(
-                  '${day.totalCalories} ккал',
+                  context.l10n.kcalValue(day.totalCalories),
                   style: TextStyle(color: colorScheme.onPrimaryContainer),
                 ),
               ],
@@ -212,11 +212,11 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
               ),
             ),
       title: Text(
-        type.title,
+        context.l10n.mealTitle(type),
         style: TextStyle(fontSize: 12, color: colorScheme.primary, fontWeight: FontWeight.w600),
       ),
       subtitle: Text(
-        recipe?.title ?? 'Не выбрано',
+        recipe?.title ?? context.l10n.notSelected,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
@@ -230,7 +230,7 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Заменить случайным',
+            tooltip: context.l10n.replaceRandom,
             onPressed: () => _setMeal(
               dayIndex,
               type,
@@ -239,7 +239,7 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.edit),
-            tooltip: 'Выбрать рецепт',
+            tooltip: context.l10n.chooseRecipe,
             onPressed: () => _pickRecipe(context, dayIndex, type),
           ),
         ],
@@ -264,7 +264,7 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
 
     final result = await RecipePickerSheet.pickOne(
       context,
-      title: '${weekDays[dayIndex]} · ${type.title}',
+      title: '${context.l10n.weekDay(dayIndex)} · ${context.l10n.mealTitle(type)}',
       recipes: sorted,
       selectedId: current?.id,
     );
@@ -315,7 +315,7 @@ class _RegenerateButton extends StatelessWidget {
             children: [
               Icon(Icons.casino, size: 22, color: color),
               Text(
-                'Новое меню\n(удерживать)',
+                context.l10n.regenerateButton,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 9, height: 1.1, color: color),
               ),
@@ -340,8 +340,8 @@ class _EmptyState extends StatelessWidget {
           children: [
             Icon(Icons.restaurant_menu, size: 64, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 16),
-            const Text(
-              'Добавьте рецепты, чтобы составить меню на неделю',
+            Text(
+              context.l10n.addRecipesForWeeklyMenu,
               textAlign: TextAlign.center,
             ),
           ],

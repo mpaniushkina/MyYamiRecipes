@@ -1,12 +1,16 @@
 # My Yami Recipes
 
 Flutter app for storing recipes (Android-first; desktop platform folders also exist).
-UI language is **Russian**; all user-facing strings are in Russian.
+UI is localized: **Russian** when the device language is Russian, **English** otherwise.
 
 ## Conventions
 
-- **Code comments must be in English.** UI strings stay in Russian.
+- **Code comments must be in English.**
   (Older code still has some Russian comments — translate them when touching that code.)
+- **No hardcoded UI strings.** Add every user-facing string to both `lib/l10n/app_en.arb` (template, with
+  `@key` placeholder metadata) and `lib/l10n/app_ru.arb`, then use `context.l10n.key`
+  (`import '.../l10n/l10n_helpers.dart'`). `flutter pub get` / build regenerates `app_localizations*.dart`.
+  Avoid ARB keys that clash with helper methods in `l10n_helpers.dart`.
 - Follow the existing color scheme: `ColorScheme.fromSeed(seedColor: Colors.deepOrange)`, Material 3.
   - AppBar: `backgroundColor: Theme.of(context).colorScheme.inversePrimary`
   - Section headers: `primaryContainer` / `onPrimaryContainer`; accents: `primary`
@@ -58,6 +62,20 @@ Special-occasion menus (AppBar icon `celebration`, «Праздничные ме
 
 Known quirk (both menus): checked keys of products no longer in the list stay stored.
 
+
+### l10n (`lib/l10n`)
+- `app_en.arb` (template) / `app_ru.arb` → generated `app_localizations*.dart` (config in `l10n.yaml`, `generate: true` in pubspec).
+- `l10n_helpers.dart`: `context.l10n`, `resolveAppLocale()` (any `ru` device locale → ru, else en; wired in `main.dart`
+  via `localeListResolutionCallback`), and `AppLocalizationsX` for **stored data**, which stays in Russian so saved
+  recipes/menus don't depend on locale: `categoryLabel(stored)`, `unitLabel(stored)`, `amountLabel(stored)`
+  ("по вкусу"…), `quantity(amount, unit)`, `mealTitle(MealType)`, `weekDay(index)`. These map Russian values to
+  ASCII ids used by ARB `select` messages (`categoryName`, `unitName`, `amountPhrase`). Plurals: `dishCount`.
+- Domain classes hold no display strings (`MealType` has only `preferredCategories`; `daysInWeek = 7`;
+  `ShoppingItem.amountText` + `unit` are combined in UI with `quantity`). Internal value `'Все'` for "all
+  categories" is still used by the bloc; only its chip label is localized.
+- The edit form shows ingredients with localized units; `IngredientParser` accepts English units/phrases too
+  and always stores the Russian ones. Tests: `test/l10n_test.dart`.
+
 ### Other
 - `lib/core/constants/app_strings.dart` — recipe categories, category → SVG map (`assets/icons/categories/`), common strings. Note: «Закуски» has no SVG mapping (falls back to «Другое»).
 - `lib/services/` — `ocr_service.dart` (Google ML Kit), `local_recipe_parser_service.dart` (clipboard text → Recipe: first line = title, sections by headers «Ингредиенты»/«Приготовление» or heuristics; unrecognized lines go to description; if no ingredients recognized, the whole text goes to the ingredients field; covered by `test/local_recipe_parser_service_test.dart`), Groq/DeepSeek LLM parsers (currently commented out in the scan flow).
@@ -69,7 +87,7 @@ Known quirk (both menus): checked keys of products no longer in the list stay st
 flutter pub get
 flutter analyze lib/feature/menu
 flutter run
-flutter test test/ingredient_parser_test.dart test/local_recipe_parser_service_test.dart test/shopping_list_test.dart  # widget_test.dart is the stale counter template and fails
+flutter test test/ingredient_parser_test.dart test/local_recipe_parser_service_test.dart test/shopping_list_test.dart test/l10n_test.dart  # widget_test.dart is the stale counter template and fails
 ```
 
 ## iOS

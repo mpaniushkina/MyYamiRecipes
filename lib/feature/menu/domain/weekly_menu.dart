@@ -5,13 +5,8 @@ import '../../recipes/domain/entities/recipe.dart';
 enum MealType { breakfast, lunch, dinner }
 
 extension MealTypeX on MealType {
-  String get title => switch (this) {
-        MealType.breakfast => 'Завтрак',
-        MealType.lunch => 'Обед',
-        MealType.dinner => 'Ужин',
-      };
-
-  /// Recipe categories suitable for this meal, in priority order.
+  /// Recipe categories (stored values) suitable for this meal, in priority order.
+  /// Display names live in l10n (`AppLocalizations.mealTitle`).
   List<String> get preferredCategories => switch (this) {
         MealType.breakfast => const ['Завтраки', 'Выпечка'],
         MealType.lunch => const ['Супы', 'Основные блюда'],
@@ -19,15 +14,8 @@ extension MealTypeX on MealType {
       };
 }
 
-const List<String> weekDays = [
-  'Понедельник',
-  'Вторник',
-  'Среда',
-  'Четверг',
-  'Пятница',
-  'Суббота',
-  'Воскресенье',
-];
+/// Days are shown via `AppLocalizations.weekDay(index)`, 0 = Monday.
+const int daysInWeek = 7;
 
 class DayMenu {
   final Map<MealType, Recipe?> meals;
@@ -66,7 +54,7 @@ class WeeklyMenuGenerator {
     }
 
     return List.generate(
-      weekDays.length,
+      daysInWeek,
       (_) => DayMenu({for (final type in MealType.values) type: next(type)}),
     );
   }

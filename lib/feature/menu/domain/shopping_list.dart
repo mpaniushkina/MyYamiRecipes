@@ -16,18 +16,21 @@ class ShoppingItem {
   /// Stable key used to persist the "bought" checkmark.
   String get key => shoppingKey(name, unit);
 
-  String get amountLabel {
+  /// Amount without unit: summed number ("1500", "0,5") or the distinct raw
+  /// amounts joined with " + " ("по вкусу + 1"). Empty if unknown.
+  String get amountText {
     if (amount != null) {
       final a = amount!;
-      final text = a == a.roundToDouble()
+      return a == a.roundToDouble()
           ? a.toInt().toString()
           : a.toStringAsFixed(1).replaceAll('.', ',');
-      return unit.isEmpty ? text : '$text $unit';
     }
-    final values = rawAmounts.where((e) => e.trim().isNotEmpty).toSet();
-    if (values.isEmpty) return unit;
-    return values.join(' + ') + (unit.isEmpty ? '' : ' $unit');
+    return rawAmounts.where((e) => e.trim().isNotEmpty).toSet().join(' + ');
   }
+
+  /// Amount with the stored (Russian) unit. UI should prefer
+  /// `AppLocalizations.quantity(amountText, unit)` for a localized label.
+  String get amountLabel => [amountText, unit].where((e) => e.isNotEmpty).join(' ');
 }
 
 String shoppingKey(String name, String unit) =>

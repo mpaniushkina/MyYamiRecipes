@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_yami_recipes/feature/recipes/presentation/screen/recipe_detail_screen.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../l10n/l10n_helpers.dart';
 import '../../../menu/presentation/screen/special_menu_list_screen.dart';
 import '../../../menu/presentation/screen/weekly_menu_screen.dart';
 import '../../../../services/local_recipe_parser_service.dart';
@@ -43,12 +44,12 @@ class _RecipesScreenState extends State<RecipesScreen> {
       value: _recipesBloc,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Рецепты'),
+          title: Text(context.l10n.recipesTitle),
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             IconButton(
               icon: const Icon(Icons.restaurant_menu),
-              tooltip: 'Меню на неделю',
+              tooltip: context.l10n.weeklyMenu,
               onPressed: () {
                 Navigator.push(
                   context,
@@ -60,7 +61,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.celebration),
-              tooltip: 'Праздничное меню',
+              tooltip: context.l10n.specialMenu,
               onPressed: () {
                 Navigator.push(
                   context,
@@ -79,7 +80,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
             //     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             //   )
             //       : const Icon(Icons.document_scanner),
-            //   tooltip: 'Сканировать',
+            //   tooltip: 'Scan',
             //   onPressed: _isScanning ? null : _handleScanScreenshot,
             // ),
             IconButton(
@@ -90,7 +91,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
                   : const Icon(Icons.add_box),
-              tooltip: 'Добавить рецепт',
+              tooltip: context.l10n.addRecipe,
               onPressed: _isScanning ? null : onPasteButtonPressed,
             ),
           ],
@@ -107,7 +108,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
                     decoration: InputDecoration(
-                      labelText: 'Поиск по названию',
+                      labelText: context.l10n.searchByTitle,
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -129,8 +130,8 @@ class _RecipesScreenState extends State<RecipesScreen> {
                       const SizedBox(width: 4),
                       Text(
                         state.maxCalories == null
-                            ? 'Калории: любые'
-                            : 'До ${state.maxCalories} ккал',
+                            ? context.l10n.caloriesAny
+                            : context.l10n.caloriesUpTo(state.maxCalories!),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const Spacer(),
@@ -141,7 +142,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
                               FilterRecipesEvent(clearCalories: true),
                             );
                           },
-                          child: const Text('Сбросить калории'),
+                          child: Text(context.l10n.resetCalories),
                         ),
                     ],
                   ),
@@ -150,9 +151,9 @@ class _RecipesScreenState extends State<RecipesScreen> {
                 Slider(
                   value: (state.maxCalories ?? 100).toDouble(),
                   min: 100,
-                  max: 3000, // Верхняя граница слайдера
-                  divisions: 28, // Шаг деления (каждые 50 ккал)
-                  label: '${state.maxCalories ?? 100} ккал',
+                  max: 3000, // Slider upper bound
+                  divisions: 28, // Step of 100 kcal
+                  label: context.l10n.kcalValue(state.maxCalories ?? 100),
                   onChanged: (double value) {
                     context.read<RecipesBloc>().add(
                       FilterRecipesEvent(maxCalories: value.toInt()),
@@ -169,7 +170,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
                       'Все',
                       ...AppStrings.recipeCategories,
                     ].map((categoryName) {
-                      // 1. Четкое вычисление подсветки для каждого чипа
+                      // 'Все' is the internal "all categories" value understood by the bloc.
                       final bool isSelected = (categoryName == 'Все')
                           ? (state.selectedCategory == null || state.selectedCategory!.isEmpty)
                           : (state.selectedCategory == categoryName);
@@ -177,7 +178,9 @@ class _RecipesScreenState extends State<RecipesScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: ChoiceChip(
-                          label: Text(categoryName),
+                          label: Text(categoryName == 'Все'
+                              ? context.l10n.allCategories
+                              : context.l10n.categoryLabel(categoryName)),
                           selected: isSelected,
                           onSelected: (selected) {
                             context.read<RecipesBloc>().add(
@@ -192,7 +195,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
 
                 Expanded(
                   child: state.filteredRecipes.isEmpty
-                      ? const Center(child: Text('Рецепты не найдены'))
+                      ? Center(child: Text(context.l10n.recipesNotFound))
                       : ListView.builder(
                     itemCount: state.filteredRecipes.length,
                     itemBuilder: (context, index) {
@@ -218,12 +221,12 @@ class _RecipesScreenState extends State<RecipesScreen> {
                             ..hideCurrentSnackBar()
                             ..showSnackBar(
                               SnackBar(
-                                content: Text('Рецепт "${recipe.title}" удален'),
+                                content: Text(context.l10n.recipeDeleted(recipe.title)),
                                 duration: const Duration(seconds: 5),
                                 // SnackBars with an action persist by default; auto-hide after 5 s.
                                 persist: false,
                                 action: SnackBarAction(
-                                  label: 'Отменить',
+                                  label: context.l10n.undo,
                                   onPressed: () => bloc.add(
                                     RestoreRecipeEvent(recipe, originalIndex < 0 ? 0 : originalIndex),
                                   ),
@@ -264,7 +267,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
                             ),
                             title: Text(recipe.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Text(recipe.description.toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
-                            trailing: Text('${recipe.cookingTimeMinutes} мин'),
+                            trailing: Text(context.l10n.minutesValue(recipe.cookingTimeMinutes ?? 0)),
                           ),
                         ),
                       );
@@ -280,13 +283,13 @@ class _RecipesScreenState extends State<RecipesScreen> {
   }
 
   Recipe createRecipeFromOcr(String recognizedText) {
-    // Разбиваем текст на строки, чтобы попробовать найти название
+    // Split into lines to try to find the title.
     final lines = recognizedText.split('\n').where((line) => line.trim().isNotEmpty).toList();
 
-    // Берем первую непустую строку как заголовок (если текст есть), иначе дефолт
-    final title = lines.isNotEmpty ? lines.first : 'Рецепт со скриншота';
+    // The first non-empty line is the title, otherwise a default one.
+    final title = lines.isNotEmpty ? lines.first : context.l10n.recipeFromScreenshot;
 
-    // Остальной текст (или весь текст целиком) пустим в описание
+    // The whole text goes to the description.
     final description = recognizedText;
 
     return Recipe(
@@ -336,7 +339,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
     });
 
     try {
-      // 1. Выбираем скриншот и распознаем текст
+      // 1. Pick a screenshot and recognize its text.
       final String? recognizedText = await _ocrService.pickAndRecognizeText();
       // final String? recognizedText = await TesseractOcrService().pickAndRecognizeText();
       if (recognizedText != null && recognizedText.isNotEmpty) {
@@ -352,7 +355,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
           isScrollControlled: true,
           builder: (sheetContext) {
             return BlocProvider.value(
-              value: _recipesBloc, // передаем уже пойманный блок
+              value: _recipesBloc, // pass the already created bloc
               child: AddRecipeBottomSheet(recipeToEdit: recipe),
             );
           },
@@ -361,7 +364,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка сканирования: $e')),
+        SnackBar(content: Text(context.l10n.scanError('$e'))),
       );
     } finally {
       if (mounted) {

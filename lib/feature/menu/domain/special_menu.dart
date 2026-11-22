@@ -25,8 +25,6 @@ class SpecialMenu {
 
   bool get isEmpty => name.trim().isEmpty && recipeIds.isEmpty;
 
-  String get displayName => name.trim().isEmpty ? 'Без названия' : name.trim();
-
   /// Resolves ids against current recipes; deleted recipes are skipped.
   List<Recipe> resolveRecipes(Map<String, Recipe> recipesById) =>
       recipeIds.map((id) => recipesById[id]).whereType<Recipe>().toList();
@@ -61,15 +59,4 @@ class SpecialMenu {
             .map((e) => e as String)
             .toSet(),
       );
-}
-
-/// Russian plural: 1 блюдо, 2 блюда, 5 блюд.
-String dishCountLabel(int n) {
-  final mod10 = n % 10, mod100 = n % 100;
-  final word = (mod10 == 1 && mod100 != 11)
-      ? 'блюдо'
-      : (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14))
-          ? 'блюда'
-          : 'блюд';
-  return '$n $word';
 }

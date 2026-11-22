@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../domain/entities/recipe.dart';
 import '../../domain/ingredient_parser.dart';
+import '../../../../l10n/l10n_helpers.dart';
 import '../bloc/recipes_bloc.dart';
 
 class AddRecipeBottomSheet extends StatefulWidget {
@@ -43,9 +44,6 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
     if (widget.recipeToEdit != null) {
       _titleController.text = widget.recipeToEdit!.title;
       _descriptionController.text = widget.recipeToEdit!.description.toString();
-      _ingredientsController.text = widget.recipeToEdit!.ingredients
-          // "Name — amount unit" per line; parsed back with IngredientParser on save.
-          .map((e) => e.displayText).join('\n');
       _timeController.text = (widget.recipeToEdit!.cookingTimeMinutes ?? 0).toString();
       _imageUrlController.text = widget.recipeToEdit!.imageUrl.toString();
       _caloriesController.text = (widget.recipeToEdit!.calories ?? 0).toString();
@@ -54,6 +52,26 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
           ? existingCategory
           : AppStrings.recipeCategories.first;
     }
+  }
+
+  bool _ingredientsInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Localizations aren't available in initState, so fill ingredients here once.
+    if (_ingredientsInitialized) return;
+    _ingredientsInitialized = true;
+    final recipe = widget.recipeToEdit;
+    if (recipe == null) return;
+
+    final l10n = context.l10n;
+    // "Name — amount unit" per line with localized units;
+    // IngredientParser understands both Russian and English units on save.
+    _ingredientsController.text = recipe.ingredients.map((e) {
+      final quantity = l10n.quantity(e.amount, e.unit);
+      return quantity.isEmpty ? e.name : '${e.name} — $quantity';
+    }).join('\n');
   }
 
   @override
@@ -73,7 +91,7 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Новый рецепт',
+                context.l10n.newRecipe,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -82,15 +100,15 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Название блюда'),
-                validator: (value) => value == null || value.isEmpty ? 'Введите название' : null,
+                decoration: InputDecoration(labelText: context.l10n.dishTitle),
+                validator: (value) => value == null || value.isEmpty ? context.l10n.enterTitle : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _selectedCategory,
                 dropdownColor: Theme.of(context).colorScheme.surface,
                 decoration: InputDecoration(
-                  labelText: AppStrings.categoryLabel,
+                  labelText: context.l10n.category,
                   border: const OutlineInputBorder(),
                   filled: true,
                   fillColor: Theme.of(context).colorScheme.surface,
@@ -98,7 +116,8 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
                 items: AppStrings.recipeCategories.map((String category) {
                   return DropdownMenuItem<String>(
                     value: category,
-                    child: Text(category),
+                    // Stored value stays Russian; only the label is localized.
+                    child: Text(context.l10n.categoryLabel(category)),
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
@@ -110,34 +129,34 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Описание'),
+                decoration: InputDecoration(labelText: context.l10n.description),
                 maxLines: 3,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _ingredientsController,
-                decoration: const InputDecoration(labelText: 'Ингридиенты'),
+                decoration: InputDecoration(labelText: context.l10n.ingredients),
                 maxLines: 10,
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _timeController,
-                decoration: const InputDecoration(labelText: 'Время приготовления (минут)'),
+                decoration: InputDecoration(labelText: context.l10n.cookingTimeMinutes),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || int.tryParse(value) == null) {
-                    return 'Введите число';
+                    return context.l10n.enterNumber;
                   }
                   return null;
                 },
               ),
               TextFormField(
                 controller: _caloriesController,
-                decoration: const InputDecoration(labelText: 'Каллории (ккал)'),
+                decoration: InputDecoration(labelText: context.l10n.caloriesKcal),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || int.tryParse(value) == null) {
-                    return 'Введите число';
+                    return context.l10n.enterNumber;
                   }
                   return null;
                 },
@@ -166,7 +185,7 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
                         context.read<RecipesBloc>().add(AddRecipeEvent(newRecipe));
                       } else {
                         final updatedRecipe = Recipe(
-                          id: widget.recipeToEdit!.id, // сохраняем старый ID
+                          id: widget.recipeToEdit!.id, // keep the original id
                           title: _titleController.text,
                           description: _descriptionController.text,
                           cookingTimeMinutes: int.parse(_timeController.text),
@@ -185,7 +204,7 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
                       Navigator.pop(context);
                     }
                   },
-                child: const Text('Сохранить рецепт'),
+                child: Text(context.l10n.saveRecipe),
               ),
               const SizedBox(height: 16),
             ],

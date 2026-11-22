@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/l10n_helpers.dart';
 import '../../../recipes/domain/entities/recipe.dart';
 import '../../data/special_menu_storage.dart';
 import '../../domain/special_menu.dart';
@@ -56,14 +57,13 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
       ),
     );
     await _reload();
-    if (deleted == true) _showSnackBar('Меню удалено');
+    if (deleted == true && mounted) _showSnackBar(context.l10n.menuDeleted);
   }
 
   void _createMenu() {
     if (_isFull) {
       _showSnackBar(
-        'Можно сохранить не больше ${SpecialMenuStorage.maxMenus} меню. '
-        'Удалите одно из сохранённых, чтобы создать новое.',
+        context.l10n.menuLimitReached(SpecialMenuStorage.maxMenus),
       );
       return;
     }
@@ -74,7 +74,7 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
     if (!await confirmDeleteSpecialMenu(context, menu)) return;
     await SpecialMenuStorage.delete(menu.id);
     await _reload();
-    _showSnackBar('Меню удалено');
+    if (mounted) _showSnackBar(context.l10n.menuDeleted);
   }
 
   @override
@@ -83,7 +83,7 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Праздничные меню'),
+        title: Text(context.l10n.specialMenus),
         backgroundColor: colorScheme.inversePrimary,
       ),
       body: _isLoading
@@ -95,7 +95,7 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
                   children: [
                     SummaryBar(
                       icon: Icons.celebration,
-                      text: 'Сохранено ${_menus.length} из ${SpecialMenuStorage.maxMenus}',
+                      text: context.l10n.savedCount(_menus.length, SpecialMenuStorage.maxMenus),
                     ),
                     if (_isFull) _buildLimitHint(context),
                     for (final menu in _menus) _buildMenuCard(context, menu),
@@ -109,7 +109,7 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
               backgroundColor: _isFull ? colorScheme.surfaceContainerHighest : null,
               foregroundColor: _isFull ? colorScheme.outline : null,
               icon: const Icon(Icons.add),
-              label: const Text('Новое меню'),
+              label: Text(context.l10n.newMenu),
             ),
     );
   }
@@ -122,8 +122,7 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
       child: ListTile(
         leading: Icon(Icons.info_outline, color: colorScheme.onSecondaryContainer),
         title: Text(
-          'Достигнут лимит в ${SpecialMenuStorage.maxMenus} меню. '
-          'Чтобы создать новое, удалите одно из сохранённых.',
+          context.l10n.menuLimitHint(SpecialMenuStorage.maxMenus),
           style: TextStyle(color: colorScheme.onSecondaryContainer),
         ),
       ),
@@ -144,15 +143,15 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
           child: Icon(Icons.celebration, color: colorScheme.onPrimaryContainer),
         ),
         title: Text(
-          menu.displayName,
+          menuDisplayName(context, menu),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
           dishes.isEmpty
-              ? 'Нет блюд'
-              : '${dishCountLabel(dishes.length)} · $calories ккал\n'
+              ? context.l10n.noDishes
+              : '${context.l10n.dishCount(dishes.length)} · ${context.l10n.kcalValue(calories)}\n'
                   '${dishes.map((r) => r.title).join(', ')}',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -160,7 +159,7 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
         isThreeLine: dishes.isNotEmpty,
         trailing: IconButton(
           icon: const Icon(Icons.delete_outline),
-          tooltip: 'Удалить меню',
+          tooltip: context.l10n.deleteMenu,
           onPressed: () => _deleteMenu(menu),
         ),
         onTap: () => _openMenu(menu),
@@ -178,9 +177,7 @@ class _SpecialMenuListScreenState extends State<SpecialMenuListScreen> {
             Icon(Icons.celebration, size: 64, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 16),
             Text(
-              'Пока нет праздничных меню.\n'
-              'Можно сохранить до ${SpecialMenuStorage.maxMenus} меню — '
-              'нажмите «Новое меню», чтобы начать.',
+              context.l10n.noSpecialMenus(SpecialMenuStorage.maxMenus),
               textAlign: TextAlign.center,
             ),
           ],

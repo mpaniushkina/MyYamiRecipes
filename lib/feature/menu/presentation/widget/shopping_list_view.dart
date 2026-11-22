@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../l10n/l10n_helpers.dart';
 import '../../domain/shopping_list.dart';
 import 'summary_bar.dart';
 
@@ -10,7 +11,8 @@ class ShoppingListView extends StatelessWidget {
   final Set<String> checkedKeys;
   final void Function(String key, bool checked) onToggle;
   final VoidCallback onClearChecked;
-  final String emptyText;
+  /// Shown when there are no items; defaults to "no ingredients".
+  final String? emptyText;
 
   const ShoppingListView({
     super.key,
@@ -18,7 +20,7 @@ class ShoppingListView extends StatelessWidget {
     required this.checkedKeys,
     required this.onToggle,
     required this.onClearChecked,
-    this.emptyText = 'В выбранных рецептах нет ингредиентов',
+    this.emptyText,
   });
 
   @override
@@ -29,7 +31,7 @@ class ShoppingListView extends StatelessWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Text(emptyText, textAlign: TextAlign.center),
+          child: Text(emptyText ?? context.l10n.noIngredientsInRecipes, textAlign: TextAlign.center),
         ),
       );
     }
@@ -41,7 +43,7 @@ class ShoppingListView extends StatelessWidget {
       children: [
         SummaryBar(
           icon: Icons.shopping_basket,
-          text: 'Куплено ${bought.length} из ${items.length}',
+          text: context.l10n.boughtProgress(bought.length, items.length),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -64,9 +66,9 @@ class ShoppingListView extends StatelessWidget {
                     children: [
                       Icon(Icons.check_circle, color: colorScheme.primary),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Всё куплено!',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      Text(
+                        context.l10n.allBought,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -81,14 +83,14 @@ class ShoppingListView extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'Куплено (${bought.length})',
+                          context.l10n.boughtSection(bought.length),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.outline,
                           ),
                         ),
                       ),
-                      TextButton(onPressed: onClearChecked, child: const Text('Сбросить')),
+                      TextButton(onPressed: onClearChecked, child: Text(context.l10n.reset)),
                     ],
                   ),
                 ),
@@ -112,6 +114,7 @@ class _ShoppingItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final quantity = context.l10n.quantity(item.amountText, item.unit);
 
     return Card(
       // Keyed by product so Flutter doesn't reuse a tile's state across sections.
@@ -132,10 +135,10 @@ class _ShoppingItemTile extends StatelessWidget {
             color: checked ? colorScheme.outline : null,
           ),
         ),
-        secondary: item.amountLabel.isEmpty
+        secondary: quantity.isEmpty
             ? null
             : Text(
-                item.amountLabel,
+                quantity,
                 style: TextStyle(
                   color: checked ? colorScheme.outline : colorScheme.primary,
                   fontWeight: FontWeight.bold,
