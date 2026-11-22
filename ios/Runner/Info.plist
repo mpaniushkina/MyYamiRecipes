@@ -72,16 +72,13 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 
-	<!-- Access to photo library (selecting recipe screenshots) -->
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>This app needs access to your photo library to select recipe screenshots for text recognition.</string>
+	<!-- Photo library: the user picks a recipe screenshot to recognize its text (image_picker, gallery only).
+	     Camera and "save to library" permissions are intentionally not requested: the app doesn't use them. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allows you to choose a recipe screenshot so the app can recognize its text and create a recipe.</string>
 
-    <!-- Access to camera (taking photos of recipes) -->
-    <key>NSCameraUsageDescription</key>
-    <string>This app needs access to your camera to take photos of recipes for text recognition.</string>
-
-    <!-- Permission to save photos to library (iOS 11+) -->
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>This app needs access to save processed recipe images to your photo library.</string>
+	<!-- Only standard HTTPS (exempt encryption): skips the export compliance question on every upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

@@ -101,7 +101,7 @@ flutter test test/ingredient_parser_test.dart test/local_recipe_parser_service_t
 
 - Minimum iOS **15.5** (required by Google ML Kit): set in `ios/Podfile` (`platform :ios, '15.5'`, `$iOSVersion`) and `IPHONEOS_DEPLOYMENT_TARGET` in `ios/Runner.xcodeproj/project.pbxproj`. Keep them in sync.
 - `ios/Podfile` post_install excludes `armv7` (ML Kit is 64-bit only) and raises pods' deployment target.
-- Camera/photo permissions are declared in `ios/Runner/Info.plist`.
+- `ios/Runner/Info.plist` declares only `NSPhotoLibraryUsageDescription` (gallery picker; camera is not used — add `NSCameraUsageDescription` if `ImageSource.camera` is ever used) and `ITSAppUsesNonExemptEncryption = false`.
 - Development happens on Windows, so iOS builds can't be verified locally — build on a Mac: `flutter pub get && cd ios && pod install && cd .. && flutter build ios`.
 
 ## Secrets
