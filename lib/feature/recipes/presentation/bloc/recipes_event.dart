@@ -34,3 +34,11 @@ class FilterRecipesEvent extends RecipesEvent {
     this.clearCalories = false,
   });
 }
+
+/// Undo for [DeleteRecipeEvent]: puts [recipe] back at its former [index]
+/// in the full (unfiltered) list.
+class RestoreRecipeEvent extends RecipesEvent {
+  final Recipe recipe;
+  final int index;
+  RestoreRecipeEvent(this.recipe, this.index);
+}

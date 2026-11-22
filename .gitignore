@@ -46,3 +46,21 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Build output of any module (e.g. android/build/)
+**/build/
+
+# Local secrets: API keys are passed via --dart-define-from-file=config/api_keys.json
+# (see config/api_keys.example.json)
+config/api_keys.json
+*.env
+.env*
+
+# Local signing / machine-specific config
+/android/key.properties
+/android/local.properties
+*.jks
+*.keystore
+
+# Claude Code local settings
+.claude/settings.local.json

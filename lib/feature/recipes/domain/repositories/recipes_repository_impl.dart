@@ -52,6 +52,14 @@ class RecipesRepositoryImpl implements RecipesRepository {
     }
   }
 
+  @override
+  Future<void> restoreRecipe(Recipe recipe, int index) async {
+    await _ensureInitialized();
+    if (_cachedRecipes.any((r) => r.id == recipe.id)) return;
+    _cachedRecipes.insert(index.clamp(0, _cachedRecipes.length), recipe);
+    await _persistCurrentState();
+  }
+
   Future<void> _persistCurrentState() async {
     final models = _cachedRecipes.map((entity) => RecipeModel.fromEntity(entity)).toList();
     await RecipeLocalStorage.saveAll(models);

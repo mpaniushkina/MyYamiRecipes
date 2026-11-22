@@ -107,10 +107,33 @@ class RecipeDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    recipe.ingredients.map((e) => e.name).toList().join('\n'),
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
+                  // Product name on the left, quantity on the right.
+                  for (final ingredient in recipe.ingredients)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              ingredient.name,
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ),
+                          if (ingredient.quantityLabel.isNotEmpty) ...[
+                            const SizedBox(width: 12),
+                            Text(
+                              ingredient.quantityLabel,
+                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 16),
                   if (recipe.description.toString().isNotEmpty) ...[
                     Text(
                       'Описание',

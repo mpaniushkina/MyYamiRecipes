@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../domain/entities/recipe.dart';
+import '../../domain/ingredient_parser.dart';
 import '../bloc/recipes_bloc.dart';
 
 class AddRecipeBottomSheet extends StatefulWidget {
@@ -43,7 +44,8 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
       _titleController.text = widget.recipeToEdit!.title;
       _descriptionController.text = widget.recipeToEdit!.description.toString();
       _ingredientsController.text = widget.recipeToEdit!.ingredients
-          .map((e) => e.name).toList().join('\n');
+          // "Name — amount unit" per line; parsed back with IngredientParser on save.
+          .map((e) => e.displayText).join('\n');
       _timeController.text = (widget.recipeToEdit!.cookingTimeMinutes ?? 0).toString();
       _imageUrlController.text = widget.recipeToEdit!.imageUrl.toString();
       _caloriesController.text = (widget.recipeToEdit!.calories ?? 0).toString();
@@ -157,11 +159,7 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
                               .split('\n')
                               .map((e) => e.trim())
                               .where((e) => e.isNotEmpty)
-                              .map((line) => IngredientEntity(
-                                name: line,
-                                amount: '',
-                                unit: '',
-                              )).toList(),
+                              .map(IngredientParser.parse).toList(),
                           steps: widget.recipeToEdit?.steps,
                         );
 
@@ -179,11 +177,7 @@ class _AddRecipeBottomSheetState extends State<AddRecipeBottomSheet> {
                               .split('\n')
                               .map((e) => e.trim())
                               .where((e) => e.isNotEmpty)
-                              .map((line) => IngredientEntity(
-                                name: line,
-                                amount: '',
-                                unit: '',
-                              )).toList(),
+                              .map(IngredientParser.parse).toList(),
                           steps: widget.recipeToEdit?.steps,
                         );
                         context.read<RecipesBloc>().add(UpdateRecipeEvent(updatedRecipe));

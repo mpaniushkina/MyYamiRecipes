@@ -4,7 +4,8 @@ import '../feature/recipes/data/models/recipe_model.dart';
 import '../feature/recipes/domain/entities/recipe.dart';
 
 class DeepSeekRecipeParserService {
-  static const String _apiKey = 'ВАШ_DEEPSEEK_API_KEY';
+  // Passed via --dart-define-from-file=config/api_keys.json (gitignored).
+  static const String _apiKey = String.fromEnvironment('DEEPSEEK_API_KEY');
   static const String _url = 'https://api.deepseek.com/chat/completions';
 
   static Future<Map<String, dynamic>?> parseOcrText(String rawOcrText) async {

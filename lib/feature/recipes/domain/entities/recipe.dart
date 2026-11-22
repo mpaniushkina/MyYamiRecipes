@@ -23,8 +23,13 @@ class Recipe {
 }
 
 class IngredientEntity {
+  /// Product name only, e.g. "Творог 5%".
   final String name;
+
+  /// Quantity as written: "400", "1,5", "1/2", "2-3", "по вкусу". Empty if unknown.
   final String amount;
+
+  /// Normalized unit: "г", "мл", "ст. л.", "шт."... Empty if none.
   final String unit;
 
   const IngredientEntity({
@@ -32,4 +37,11 @@ class IngredientEntity {
     required this.amount,
     required this.unit,
   });
+
+  /// "400 г", "2", "по вкусу" or empty.
+  String get quantityLabel => [amount, unit].where((e) => e.isNotEmpty).join(' ');
+
+  /// One-line text used in the edit form and detail screen: "Творог 5% — 400 г".
+  /// [IngredientParser.parse] turns it back into the same entity.
+  String get displayText => quantityLabel.isEmpty ? name : '$name — $quantityLabel';
 }

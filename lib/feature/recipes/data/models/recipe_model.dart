@@ -1,4 +1,5 @@
 import '../../domain/entities/recipe.dart';
+import '../../domain/ingredient_parser.dart';
 
 class IngredientModel {
   final String? name;
@@ -26,7 +27,12 @@ class IngredientModel {
   };
 
   IngredientEntity toEntity() {
-    return IngredientEntity(name: name.toString(), amount: amount.toString(), unit: unit.toString());
+    final n = (name ?? '').trim();
+    final a = (amount ?? '').trim();
+    final u = (unit ?? '').trim();
+    // Legacy data stored the whole line in `name`: split it into name/amount/unit.
+    if (a.isEmpty && u.isEmpty) return IngredientParser.parse(n);
+    return IngredientEntity(name: n, amount: a, unit: u);
   }
 
   factory IngredientModel.fromEntity(IngredientEntity entity) {
@@ -68,8 +74,9 @@ class RecipeModel {
       title: json['title'] as String,
       description: json['description'] as String?,
       imageUrl: imageUrl ?? json['imageUrl'] as String?,
-      cookingTimeMinutes: json['prepTimeMinutes'] != null
-          ? (json['prepTimeMinutes'] as num).toInt() : 20,
+      // Local storage writes `cookingTimeMinutes`; remote/LLM JSON uses `prepTimeMinutes`.
+      cookingTimeMinutes: (json['cookingTimeMinutes'] ?? json['prepTimeMinutes']) != null
+          ? ((json['cookingTimeMinutes'] ?? json['prepTimeMinutes']) as num).toInt() : 20,
       category: json['category'] as String?,
       calories: json['calories'] != null
           ? (json['calories'] as num).toInt() : 0,
@@ -89,6 +96,7 @@ class RecipeModel {
     'imageUrl': imageUrl,
     'cookingTimeMinutes': cookingTimeMinutes,
     'category': category,
+    'calories': calories,
     'ingredients': ingredients.map((i) => i.toJson()).toList(),
     'steps': steps,
   };

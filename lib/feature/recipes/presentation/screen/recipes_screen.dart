@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:my_yami_recipes/feature/recipes/presentation/screen/recipe_detail_screen.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../menu/presentation/screen/special_menu_list_screen.dart';
+import '../../../menu/presentation/screen/weekly_menu_screen.dart';
 import '../../../../services/local_recipe_parser_service.dart';
 import '../../../../services/ocr_service.dart';
 import '../../domain/entities/recipe.dart';
@@ -45,16 +47,41 @@ class _RecipesScreenState extends State<RecipesScreen> {
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           actions: [
             IconButton(
-              icon: _isScanning
-                  ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-                  : const Icon(Icons.document_scanner),
-              tooltip: 'Сканировать',
-              onPressed: _isScanning ? null : _handleScanScreenshot,
+              icon: const Icon(Icons.restaurant_menu),
+              tooltip: 'Меню на неделю',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => WeeklyMenuScreen(recipes: _recipesBloc.state.allRecipes),
+                  ),
+                );
+              },
             ),
+            IconButton(
+              icon: const Icon(Icons.celebration),
+              tooltip: 'Праздничное меню',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SpecialMenuListScreen(recipes: _recipesBloc.state.allRecipes),
+                  ),
+                );
+              },
+            ),
+            //TODO this feature isn't added yet to use AI
+            // IconButton(
+            //   icon: _isScanning
+            //       ? const SizedBox(
+            //     width: 20,
+            //     height: 20,
+            //     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            //   )
+            //       : const Icon(Icons.document_scanner),
+            //   tooltip: 'Сканировать',
+            //   onPressed: _isScanning ? null : _handleScanScreenshot,
+            // ),
             IconButton(
               icon: _isScanning
                   ? const SizedBox(
@@ -63,7 +90,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
                   : const Icon(Icons.add_box),
-              tooltip: 'Добавить из буфера',
+              tooltip: 'Добавить рецепт',
               onPressed: _isScanning ? null : onPasteButtonPressed,
             ),
           ],
@@ -181,11 +208,28 @@ class _RecipesScreenState extends State<RecipesScreen> {
                           child: const Icon(Icons.delete, color: Colors.white),
                         ),
                         onDismissed: (direction) {
-                          context.read<RecipesBloc>().add(DeleteRecipeEvent(recipe.id));
+                          final bloc = context.read<RecipesBloc>();
+                          // Remember the position in the full list to restore it on undo.
+                          final originalIndex =
+                              bloc.state.allRecipes.indexWhere((r) => r.id == recipe.id);
+                          bloc.add(DeleteRecipeEvent(recipe.id));
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Рецепт "${recipe.title}" удален')),
-                          );
+                          ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              SnackBar(
+                                content: Text('Рецепт "${recipe.title}" удален'),
+                                duration: const Duration(seconds: 5),
+                                // SnackBars with an action persist by default; auto-hide after 5 s.
+                                persist: false,
+                                action: SnackBarAction(
+                                  label: 'Отменить',
+                                  onPressed: () => bloc.add(
+                                    RestoreRecipeEvent(recipe, originalIndex < 0 ? 0 : originalIndex),
+                                  ),
+                                ),
+                              ),
+                            );
                         },
                         child: Card(
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -231,25 +275,6 @@ class _RecipesScreenState extends State<RecipesScreen> {
             );
           },
         ),
-        floatingActionButton: Builder(
-          builder: (innerContext) {
-            return FloatingActionButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: innerContext,
-                  isScrollControlled: true,
-                  builder: (sheetContext) {
-                    return BlocProvider.value(
-                      value: BlocProvider.of<RecipesBloc>(innerContext),
-                      child: const AddRecipeBottomSheet(recipeToEdit: null,),
-                    );
-                  },
-                );
-              },
-              child: const Icon(Icons.add),
-            );
-          },
-        ),
       ),
     );
   }
@@ -277,12 +302,21 @@ class _RecipesScreenState extends State<RecipesScreen> {
     );
   }
 
+  /// Opens the add-recipe sheet. If the clipboard has text, it is parsed
+  /// into a prefilled recipe; otherwise an empty form is shown.
   Future<void> onPasteButtonPressed() async {
-    final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text == null || data!.text!.isEmpty) return;
+    String? clipboardText;
+    try {
+      final ClipboardData? data = await Clipboard.getData(Clipboard.kTextPlain);
+      clipboardText = data?.text?.trim();
+    } catch (_) {
+      // Clipboard may be unavailable on some platforms: fall back to an empty form.
+    }
+    if (!mounted) return;
 
-    // Парсим сырой скопированный текст в структурированный объект
-    Recipe? recipe = LocalRecipeParserService.parse(data.text!);
+    final Recipe? recipe = (clipboardText == null || clipboardText.isEmpty)
+        ? null
+        : LocalRecipeParserService.parse(clipboardText);
 
     showModalBottomSheet(
       context: context,
