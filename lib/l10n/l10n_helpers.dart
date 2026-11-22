@@ -5,10 +5,11 @@ import 'app_localizations.dart';
 
 export 'app_localizations.dart';
 
-/// Russian is used only when the device language is Russian; English otherwise.
+/// Russian is used only when the device's primary language is Russian; English otherwise.
+/// Secondary languages are ignored (e.g. English + Russian keyboard on Samsung → English).
 Locale resolveAppLocale(List<Locale>? deviceLocales, Iterable<Locale> supported) {
-  final isRussian = deviceLocales?.any((l) => l.languageCode == 'ru') ?? false;
-  return isRussian ? const Locale('ru') : const Locale('en');
+  final primary = (deviceLocales == null || deviceLocales.isEmpty) ? null : deviceLocales.first;
+  return primary?.languageCode == 'ru' ? const Locale('ru') : const Locale('en');
 }
 
 extension L10nContext on BuildContext {

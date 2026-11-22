@@ -65,7 +65,7 @@ Known quirk (both menus): checked keys of products no longer in the list stay st
 
 ### l10n (`lib/l10n`)
 - `app_en.arb` (template) / `app_ru.arb` → generated `app_localizations*.dart` (config in `l10n.yaml`, `generate: true` in pubspec).
-- `l10n_helpers.dart`: `context.l10n`, `resolveAppLocale()` (any `ru` device locale → ru, else en; wired in `main.dart`
+- `l10n_helpers.dart`: `context.l10n`, `resolveAppLocale()` (primary device locale `ru` → ru, else en; secondary languages ignored; wired in `main.dart`
   via `localeListResolutionCallback`), and `AppLocalizationsX` for **stored data**, which stays in Russian so saved
   recipes/menus don't depend on locale: `categoryLabel(stored)`, `unitLabel(stored)`, `amountLabel(stored)`
   ("по вкусу"…), `quantity(amount, unit)`, `mealTitle(MealType)`, `weekDay(index)`. These map Russian values to
@@ -89,6 +89,13 @@ flutter analyze lib/feature/menu
 flutter run
 flutter test test/ingredient_parser_test.dart test/local_recipe_parser_service_test.dart test/shopping_list_test.dart test/l10n_test.dart  # widget_test.dart is the stale counter template and fails
 ```
+
+## Android
+
+- Release builds use R8: `android/app/proguard-rules.pro` has `-dontwarn` rules for the optional ML Kit recognizers
+  (Chinese/Devanagari/Japanese/Korean) referenced by `google_mlkit_text_recognition`; without them
+  `flutter build apk --release` fails with "Missing classes detected while running R8".
+- Release is still signed with the debug key (see TODO in `android/app/build.gradle.kts`).
 
 ## iOS
 

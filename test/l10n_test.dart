@@ -8,9 +8,10 @@ void main() {
   final ru = lookupAppLocalizations(const Locale('ru'));
   final supported = AppLocalizations.supportedLocales;
 
-  test('Russian only for Russian devices, English otherwise', () {
+  test('Russian only when the primary device language is Russian', () {
     expect(resolveAppLocale([const Locale('ru', 'RU')], supported), const Locale('ru'));
-    expect(resolveAppLocale([const Locale('de'), const Locale('ru')], supported), const Locale('ru'));
+    expect(resolveAppLocale([const Locale('en', 'US'), const Locale('ru', 'RU')], supported), const Locale('en'));
+    expect(resolveAppLocale([const Locale('ru'), const Locale('en')], supported), const Locale('ru'));
     expect(resolveAppLocale([const Locale('de', 'DE')], supported), const Locale('en'));
     expect(resolveAppLocale([const Locale('uk')], supported), const Locale('en'));
     expect(resolveAppLocale(null, supported), const Locale('en'));
