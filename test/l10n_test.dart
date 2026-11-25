@@ -20,6 +20,8 @@ void main() {
   test('stored categories are translated, custom ones kept', () {
     expect(en.categoryLabel('Основные блюда'), 'Main courses');
     expect(en.categoryLabel('Закуски'), 'Appetizers');
+    expect(en.categoryLabel('Горячее'), 'Hot dishes');
+    expect(ru.categoryLabel('Горячее'), 'Горячее');
     expect(en.categoryLabel(null), 'Other');
     expect(en.categoryLabel('Моя категория'), 'Моя категория');
     expect(ru.categoryLabel('Супы'), 'Супы');

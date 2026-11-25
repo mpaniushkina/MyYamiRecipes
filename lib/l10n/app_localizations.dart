@@ -587,7 +587,7 @@ abstract class AppLocalizations {
   /// Recipe category by internal id
   ///
   /// In en, this message translates to:
-  /// **'{category, select, breakfast{Breakfast} soups{Soups} mains{Main courses} salads{Salads} desserts{Desserts} bakery{Baking} drinks{Drinks} snacks{Appetizers} other{Other}}'**
+  /// **'{category, select, breakfast{Breakfast} soups{Soups} mains{Main courses} hot{Hot dishes} salads{Salads} desserts{Desserts} bakery{Baking} drinks{Drinks} snacks{Appetizers} other{Other}}'**
   String categoryName(String category);
 
   /// Ingredient unit by internal id
@@ -601,6 +601,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{phrase, select, toTaste{to taste} optional{optional} forServing{for serving} forFrying{for frying} knifeTip{a pinch} other{}}'**
   String amountPhrase(String phrase);
+
+  /// No description provided for @byProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'By products'**
+  String get byProducts;
+
+  /// No description provided for @menuFromProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu from products'**
+  String get menuFromProducts;
+
+  /// No description provided for @menuFromProductsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick up to {max} products: the menu will get every dish that contains at least one of them'**
+  String menuFromProductsHint(int max);
+
+  /// No description provided for @searchByIngredient.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by ingredient'**
+  String get searchByIngredient;
+
+  /// No description provided for @addIngredient.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addIngredient;
+
+  /// No description provided for @ingredientsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected {count} of {max}'**
+  String ingredientsSelected(int count, int max);
+
+  /// No description provided for @ingredientLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'You can pick at most {max} products'**
+  String ingredientLimitReached(int max);
+
+  /// No description provided for @ingredientsNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No such ingredients in your recipes'**
+  String get ingredientsNotFound;
+
+  /// Confirm button; dishes is a dishCount string
+  ///
+  /// In en, this message translates to:
+  /// **'Done · {dishes}'**
+  String createMenuWithDishes(String dishes);
+
+  /// No description provided for @dishesAddedToMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to the menu: {dishes}'**
+  String dishesAddedToMenu(String dishes);
+
+  /// No description provided for @noDishesWithProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'No dishes contain the selected products'**
+  String get noDishesWithProducts;
+
+  /// No description provided for @matchingDishesAlreadyInMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'All matching dishes are already in the menu'**
+  String get matchingDishesAlreadyInMenu;
+
+  /// dishes is a dishCount string
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly menu created from {dishes}'**
+  String weeklyMenuFromProductsCreated(String dishes);
+
+  /// No description provided for @replace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get replace;
+
+  /// No description provided for @replaceWeeklyMenuQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the weekly menu?'**
+  String get replaceWeeklyMenuQuestion;
+
+  /// dishes is a dishCount string
+  ///
+  /// In en, this message translates to:
+  /// **'The current week will be replaced by a new menu from {dishes} with the selected products. Grocery checkmarks will be reset.'**
+  String replaceWeeklyMenuContent(String dishes);
 }
 
 class _AppLocalizationsDelegate

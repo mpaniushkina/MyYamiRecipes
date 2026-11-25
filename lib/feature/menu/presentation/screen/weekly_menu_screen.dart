@@ -7,8 +7,10 @@ import '../../../../l10n/l10n_helpers.dart';
 import '../../../recipes/domain/entities/recipe.dart';
 import '../../../recipes/presentation/screen/recipe_detail_screen.dart';
 import '../../data/weekly_menu_storage.dart';
+import '../../domain/ingredient_search.dart';
 import '../../domain/shopping_list.dart';
 import '../../domain/weekly_menu.dart';
+import '../widget/ingredient_picker_sheet.dart';
 import '../widget/recipe_picker_sheet.dart';
 import '../widget/shopping_list_view.dart';
 import '../widget/summary_bar.dart';
@@ -61,6 +63,49 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
     _save();
   }
 
+  /// Regenerates the week using only recipes that contain at least one picked product.
+  Future<void> _generateFromProducts() async {
+    final ingredients = await IngredientPickerSheet.pick(context, recipes: widget.recipes);
+    if (ingredients == null || !mounted) return;
+
+    final matched = recipesWithAnyIngredient(widget.recipes, ingredients);
+    if (matched.isEmpty) {
+      _showSnackBar(context.l10n.noDishesWithProducts);
+      return;
+    }
+    // Ask before replacing a week that already has dishes.
+    if (_menu.allRecipes.isNotEmpty && !await _confirmReplaceMenu(matched.length)) return;
+    if (!mounted) return;
+    setState(() {
+      _menu = _generator.generate(matched);
+      _checkedProducts.clear();
+    });
+    _save();
+    _showSnackBar(context.l10n.weeklyMenuFromProductsCreated(context.l10n.dishCount(matched.length)));
+  }
+
+  Future<bool> _confirmReplaceMenu(int dishCount) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.shopping_basket_outlined),
+        title: Text(context.l10n.replaceWeeklyMenuQuestion),
+        content: Text(context.l10n.replaceWeeklyMenuContent(context.l10n.dishCount(dishCount))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(context.l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(context.l10n.replace),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   void _setMeal(int dayIndex, MealType type, Recipe? recipe) {
     setState(() => _menu[dayIndex] = _menu[dayIndex].copyWith(type, recipe));
     _save();
@@ -110,6 +155,11 @@ class _WeeklyMenuScreenState extends State<WeeklyMenuScreen> {
           title: Text(context.l10n.weeklyMenu),
           backgroundColor: colorScheme.inversePrimary,
           actions: [
+            IconButton(
+              icon: const Icon(Icons.shopping_basket_outlined),
+              tooltip: context.l10n.menuFromProducts,
+              onPressed: !_isLoading && widget.recipes.isNotEmpty ? _generateFromProducts : null,
+            ),
             _RegenerateButton(
               enabled: !_isLoading && widget.recipes.isNotEmpty,
               onLongPress: _onRegenerateLongPress,

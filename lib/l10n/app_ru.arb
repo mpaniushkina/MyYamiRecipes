@@ -88,7 +88,24 @@
   "untitled": "Без названия",
   "dishCount": "{count, plural, one{{count} блюдо} few{{count} блюда} many{{count} блюд} other{{count} блюда}}",
 
-  "categoryName": "{category, select, breakfast{Завтраки} soups{Супы} mains{Основные блюда} salads{Салаты} desserts{Десерты} bakery{Выпечка} drinks{Напитки} snacks{Закуски} other{Другое}}",
+  "categoryName": "{category, select, breakfast{Завтраки} soups{Супы} mains{Основные блюда} hot{Горячее} salads{Салаты} desserts{Десерты} bakery{Выпечка} drinks{Напитки} snacks{Закуски} other{Другое}}",
   "unitName": "{unit, select, g{г} kg{кг} mg{мг} ml{мл} l{л} tbsp{ст. л.} tsp{ч. л.} pcs{шт.} cup{стакан} clove{зубчик} pinch{щепотка} bunch{пучок} can{банка} pack{уп.} sachet{пакетик} slice{ломтик} piece{кусочек} wedge{долька} sprig{веточка} leaf{лист} head{головка} serving{порция} other{}}",
-  "amountPhrase": "{phrase, select, toTaste{по вкусу} optional{по желанию} forServing{для подачи} forFrying{для жарки} knifeTip{на кончике ножа} other{}}"
+  "amountPhrase": "{phrase, select, toTaste{по вкусу} optional{по желанию} forServing{для подачи} forFrying{для жарки} knifeTip{на кончике ножа} other{}}",
+
+  "byProducts": "По продуктам",
+  "menuFromProducts": "Меню из продуктов",
+  "menuFromProductsHint": "Выберите до {max} продуктов — в меню попадут все блюда, где есть хотя бы один из них",
+  "searchByIngredient": "Поиск по ингредиенту",
+  "addIngredient": "Добавить",
+  "ingredientsSelected": "Выбрано {count} из {max}",
+  "ingredientLimitReached": "Можно выбрать не больше {max} продуктов",
+  "ingredientsNotFound": "Таких ингредиентов нет в ваших рецептах",
+  "createMenuWithDishes": "Готово · {dishes}",
+  "dishesAddedToMenu": "Добавлено в меню: {dishes}",
+  "noDishesWithProducts": "Нет блюд с выбранными продуктами",
+  "matchingDishesAlreadyInMenu": "Все подходящие блюда уже в меню",
+  "weeklyMenuFromProductsCreated": "Меню на неделю составлено из: {dishes}",
+  "replace": "Заменить",
+  "replaceWeeklyMenuQuestion": "Заменить меню на неделю?",
+  "replaceWeeklyMenuContent": "Текущая неделя будет заменена новым меню из блюд с выбранными продуктами (подходит: {dishes}). Отметки в списке продуктов сбросятся."
 }

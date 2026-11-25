@@ -47,18 +47,18 @@ Shared code:
 Weekly menu (AppBar icon `restaurant_menu`):
 - `domain/weekly_menu.dart`
   - `MealType` (breakfast/lunch/dinner) with `title` and `preferredCategories`:
-    breakfast → Завтраки, Выпечка; lunch → Супы, Основные блюда; dinner → Основные блюда, Салаты.
+    breakfast → Завтраки, Выпечка; lunch → Супы, Основные блюда, Горячее; dinner → Основные блюда, Горячее, Салаты.
     Fallback when no recipes match: all except Напитки/Десерты.
   - `weekDays` (Mon–Sun, Russian), `DayMenu` (map MealType → Recipe?), `List<DayMenu>.allRecipes` extension.
   - `WeeklyMenuGenerator.generate()` (shuffled queue per meal → minimal repeats), `randomFor()`.
 - `data/weekly_menu_storage.dart` — key `weekly_menu`. `clear()` exists but is not wired into the UI.
-- `presentation/screen/weekly_menu_screen.dart` — tabs «Меню» (day cards; per meal: random replace / `pickOne` / tap to open detail) and «Продукты». AppBar `_RegenerateButton` (🎲 «Новое меню (удерживать)») regenerates the whole week on **long press only**; a tap just shows a hint SnackBar (protection against accidental reset).
+- `presentation/screen/weekly_menu_screen.dart` — tabs «Меню» (day cards; per meal: random replace / `pickOne` / tap to open detail) and «Продукты». AppBar `_RegenerateButton` (🎲 «Новое меню (удерживать)») regenerates the whole week on **long press only**; a tap just shows a hint SnackBar (protection against accidental reset). AppBar 🧺 «Меню из продуктов» opens the same `IngredientPickerSheet` and regenerates the week (after a «Заменить меню на неделю?» confirm dialog, skipped if the week is empty) from recipes containing at least one picked product (generator's category fallback applies within those recipes).
 
 Special-occasion menus (AppBar icon `celebration`, «Праздничные меню») — **up to 3 saved menus**:
 - `domain/special_menu.dart` — `SpecialMenu` model (`id`, `name`, ordered `recipeIds`, `checkedProducts`; `isEmpty`, `displayName`, `resolveRecipes()`, JSON) and `dishCountLabel()` (Russian plural).
 - `data/special_menu_storage.dart` — key `special_menus` (JSON list). `SpecialMenuStorage.maxMenus = 3`; `save()` upserts and returns false when adding would exceed the limit; `delete(id)`. Migrates the old single-menu key `special_menu` on first load.
 - `presentation/screen/special_menu_list_screen.dart` — entry screen: «Сохранено N из 3», menu cards (name, dish count, kcal, dish titles; tap → editor; 🗑 → confirm + delete). FAB «Новое меню»; when the limit is reached it is muted, a hint card is shown and a tap explains that one menu must be deleted first.
-- `presentation/screen/special_menu_screen.dart` — editor of one menu, tabs «Блюда» and «Продукты». Editable name; dishes from **any** category are added via `pickMany` over all recipes (sorted by title) from an extended FAB «Добавить блюда» (dishes tab only). Dishes are grouped by category in `AppStrings.recipeCategories` order, with remove button and tap → detail. A new menu (`isNew`) is not persisted until it gets a name or a dish, so leaving it empty doesn't take a slot. AppBar 🗑 deletes after `confirmDeleteSpecialMenu()` and pops with `true`.
+- `presentation/screen/special_menu_screen.dart` — editor of one menu, tabs «Блюда» and «Продукты». Editable name; dishes from **any** category are added via `pickMany` over all recipes (sorted by title) from an extended FAB «Добавить блюда» (dishes tab only). Dishes are grouped by category in `AppStrings.recipeCategories` order, with remove button and tap → detail. A second FAB «По продуктам» opens `presentation/widget/ingredient_picker_sheet.dart` (search over bare product names from `ingredientKeyword()` — amount, parentheses, numbers and symbols stripped, e.g. "Творог 5%" → "Творог" — up to `maxMenuIngredients = 10` chips, free text allowed); on «Готово» every recipe containing at least one picked product (case/ё-insensitive substring, `domain/ingredient_search.dart`, tests `test/ingredient_search_test.dart`) is appended to the menu. A new menu (`isNew`) is not persisted until it gets a name or a dish, so leaving it empty doesn't take a slot. AppBar 🗑 deletes after `confirmDeleteSpecialMenu()` and pops with `true`.
 
 Known quirk (both menus): checked keys of products no longer in the list stay stored.
 
@@ -77,7 +77,7 @@ Known quirk (both menus): checked keys of products no longer in the list stay st
   and always stores the Russian ones. Tests: `test/l10n_test.dart`.
 
 ### Other
-- `lib/core/constants/app_strings.dart` — recipe categories, category → SVG map (`assets/icons/categories/`), common strings. Note: «Закуски» has no SVG mapping (falls back to «Другое»).
+- `lib/core/constants/app_strings.dart` — recipe categories, category → SVG map (`assets/icons/categories/`), common strings. Note: «Закуски» has no SVG mapping (falls back to «Другое»); «Горячее» reuses main_course.svg.
 - `lib/services/` — `ocr_service.dart` (Google ML Kit), `local_recipe_parser_service.dart` (clipboard text → Recipe: first line = title, sections by headers «Ингредиенты»/«Приготовление» or heuristics; unrecognized lines go to description; if no ingredients recognized, the whole text goes to the ingredients field; covered by `test/local_recipe_parser_service_test.dart`), Groq/DeepSeek LLM parsers (currently commented out in the scan flow).
 - `lib/main.dart` — `MaterialApp` with the deepOrange theme; `RecipesScreen` also creates its own `RecipesBloc`.
 
@@ -87,7 +87,7 @@ Known quirk (both menus): checked keys of products no longer in the list stay st
 flutter pub get
 flutter analyze lib/feature/menu
 flutter run
-flutter test test/ingredient_parser_test.dart test/local_recipe_parser_service_test.dart test/shopping_list_test.dart test/l10n_test.dart  # widget_test.dart is the stale counter template and fails
+flutter test test/ingredient_parser_test.dart test/local_recipe_parser_service_test.dart test/shopping_list_test.dart test/l10n_test.dart test/ingredient_search_test.dart  # widget_test.dart is the stale counter template and fails
 ```
 
 ## Android

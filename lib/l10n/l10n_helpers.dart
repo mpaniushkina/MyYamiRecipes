@@ -24,6 +24,7 @@ const Map<String, String> _categoryIds = {
   'Завтраки': 'breakfast',
   'Супы': 'soups',
   'Основные блюда': 'mains',
+  'Горячее': 'hot',
   'Салаты': 'salads',
   'Десерты': 'desserts',
   'Выпечка': 'bakery',

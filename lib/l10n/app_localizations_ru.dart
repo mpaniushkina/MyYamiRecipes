@@ -301,6 +301,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'breakfast': 'Завтраки',
       'soups': 'Супы',
       'mains': 'Основные блюда',
+      'hot': 'Горячее',
       'salads': 'Салаты',
       'desserts': 'Десерты',
       'bakery': 'Выпечка',
@@ -352,5 +353,67 @@ class AppLocalizationsRu extends AppLocalizations {
       'other': '',
     });
     return '$_temp0';
+  }
+
+  @override
+  String get byProducts => 'По продуктам';
+
+  @override
+  String get menuFromProducts => 'Меню из продуктов';
+
+  @override
+  String menuFromProductsHint(int max) {
+    return 'Выберите до $max продуктов — в меню попадут все блюда, где есть хотя бы один из них';
+  }
+
+  @override
+  String get searchByIngredient => 'Поиск по ингредиенту';
+
+  @override
+  String get addIngredient => 'Добавить';
+
+  @override
+  String ingredientsSelected(int count, int max) {
+    return 'Выбрано $count из $max';
+  }
+
+  @override
+  String ingredientLimitReached(int max) {
+    return 'Можно выбрать не больше $max продуктов';
+  }
+
+  @override
+  String get ingredientsNotFound => 'Таких ингредиентов нет в ваших рецептах';
+
+  @override
+  String createMenuWithDishes(String dishes) {
+    return 'Готово · $dishes';
+  }
+
+  @override
+  String dishesAddedToMenu(String dishes) {
+    return 'Добавлено в меню: $dishes';
+  }
+
+  @override
+  String get noDishesWithProducts => 'Нет блюд с выбранными продуктами';
+
+  @override
+  String get matchingDishesAlreadyInMenu => 'Все подходящие блюда уже в меню';
+
+  @override
+  String weeklyMenuFromProductsCreated(String dishes) {
+    return 'Меню на неделю составлено из: $dishes';
+  }
+
+  @override
+  String get replace => 'Заменить';
+
+  @override
+  String get replaceWeeklyMenuQuestion => 'Заменить меню на неделю?';
+
+  @override
+  String replaceWeeklyMenuContent(String dishes) {
+    return 'Текущая неделя будет заменена новым меню из блюд с выбранными продуктами (подходит: $dishes). Отметки в списке продуктов сбросятся.';
   }
 }

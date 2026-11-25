@@ -6,8 +6,10 @@ import '../../../../l10n/l10n_helpers.dart';
 import '../../../recipes/domain/entities/recipe.dart';
 import '../../../recipes/presentation/screen/recipe_detail_screen.dart';
 import '../../data/special_menu_storage.dart';
+import '../../domain/ingredient_search.dart';
 import '../../domain/shopping_list.dart';
 import '../../domain/special_menu.dart';
+import '../widget/ingredient_picker_sheet.dart';
 import '../widget/recipe_picker_sheet.dart';
 import '../widget/shopping_list_view.dart';
 import '../widget/summary_bar.dart';
@@ -124,6 +126,29 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
     ));
   }
 
+  /// Adds every recipe that contains at least one of the products the user picks.
+  Future<void> _addByProducts() async {
+    final ingredients = await IngredientPickerSheet.pick(context, recipes: widget.recipes);
+    if (ingredients == null || !mounted) return;
+
+    final current = _menu.recipeIds.toSet();
+    final matched = recipesWithAnyIngredient(widget.recipes, ingredients)
+      ..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+    final newIds = matched.map((r) => r.id).where((id) => !current.contains(id)).toList();
+
+    if (newIds.isNotEmpty) {
+      _update(_menu.copyWith(recipeIds: [..._menu.recipeIds, ...newIds]));
+    }
+    final message = matched.isEmpty
+        ? context.l10n.noDishesWithProducts
+        : newIds.isEmpty
+            ? context.l10n.matchingDishesAlreadyInMenu
+            : context.l10n.dishesAddedToMenu(context.l10n.dishCount(newIds.length));
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   void _removeDish(Recipe recipe) {
     _update(_menu.copyWith(
       recipeIds: _menu.recipeIds.where((id) => id != recipe.id).toList(),
@@ -187,10 +212,26 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
         ],
       ),
       floatingActionButton: _tabController.index == 0 && widget.recipes.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: _addDishes,
-              icon: const Icon(Icons.add),
-              label: Text(context.l10n.addDishes),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton.extended(
+                  heroTag: 'menu_by_products',
+                  onPressed: _addByProducts,
+                  backgroundColor: colorScheme.secondaryContainer,
+                  foregroundColor: colorScheme.onSecondaryContainer,
+                  icon: const Icon(Icons.shopping_basket_outlined),
+                  label: Text(context.l10n.byProducts),
+                ),
+                const SizedBox(height: 12),
+                FloatingActionButton.extended(
+                  heroTag: 'menu_add_dishes',
+                  onPressed: _addDishes,
+                  icon: const Icon(Icons.add),
+                  label: Text(context.l10n.addDishes),
+                ),
+              ],
             )
           : null,
     );
@@ -203,8 +244,8 @@ class _SpecialMenuScreenState extends State<SpecialMenuScreen>
     final totalCalories = dishes.fold<int>(0, (s, r) => s + (r.calories ?? 0));
 
     return ListView(
-      // Bottom padding keeps the last card above the extended FAB.
-      padding: const EdgeInsets.only(bottom: 88),
+      // Bottom padding keeps the last card above the two extended FABs.
+      padding: const EdgeInsets.only(bottom: 156),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),

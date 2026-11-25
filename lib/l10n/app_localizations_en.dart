@@ -299,6 +299,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'breakfast': 'Breakfast',
       'soups': 'Soups',
       'mains': 'Main courses',
+      'hot': 'Hot dishes',
       'salads': 'Salads',
       'desserts': 'Desserts',
       'bakery': 'Baking',
@@ -350,5 +351,68 @@ class AppLocalizationsEn extends AppLocalizations {
       'other': '',
     });
     return '$_temp0';
+  }
+
+  @override
+  String get byProducts => 'By products';
+
+  @override
+  String get menuFromProducts => 'Menu from products';
+
+  @override
+  String menuFromProductsHint(int max) {
+    return 'Pick up to $max products: the menu will get every dish that contains at least one of them';
+  }
+
+  @override
+  String get searchByIngredient => 'Search by ingredient';
+
+  @override
+  String get addIngredient => 'Add';
+
+  @override
+  String ingredientsSelected(int count, int max) {
+    return 'Selected $count of $max';
+  }
+
+  @override
+  String ingredientLimitReached(int max) {
+    return 'You can pick at most $max products';
+  }
+
+  @override
+  String get ingredientsNotFound => 'No such ingredients in your recipes';
+
+  @override
+  String createMenuWithDishes(String dishes) {
+    return 'Done · $dishes';
+  }
+
+  @override
+  String dishesAddedToMenu(String dishes) {
+    return 'Added to the menu: $dishes';
+  }
+
+  @override
+  String get noDishesWithProducts => 'No dishes contain the selected products';
+
+  @override
+  String get matchingDishesAlreadyInMenu =>
+      'All matching dishes are already in the menu';
+
+  @override
+  String weeklyMenuFromProductsCreated(String dishes) {
+    return 'Weekly menu created from $dishes';
+  }
+
+  @override
+  String get replace => 'Replace';
+
+  @override
+  String get replaceWeeklyMenuQuestion => 'Replace the weekly menu?';
+
+  @override
+  String replaceWeeklyMenuContent(String dishes) {
+    return 'The current week will be replaced by a new menu from $dishes with the selected products. Grocery checkmarks will be reset.';
   }
 }

@@ -9,8 +9,8 @@ extension MealTypeX on MealType {
   /// Display names live in l10n (`AppLocalizations.mealTitle`).
   List<String> get preferredCategories => switch (this) {
         MealType.breakfast => const ['Завтраки', 'Выпечка'],
-        MealType.lunch => const ['Супы', 'Основные блюда'],
-        MealType.dinner => const ['Основные блюда', 'Салаты'],
+        MealType.lunch => const ['Супы', 'Основные блюда', 'Горячее'],
+        MealType.dinner => const ['Основные блюда', 'Горячее', 'Салаты'],
       };
 }
 
