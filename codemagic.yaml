@@ -1,0 +1,65 @@
+# Codemagic CI (https://codemagic.io) — iOS builds without a local Mac.
+#
+# ios-check      — unsigned build: checks that the iOS project compiles. No Apple account needed.
+# ios-testflight — signed build uploaded to TestFlight. Needs an App Store Connect API key
+#                  added in Codemagic (Team settings → Integrations → Developer Portal)
+#                  under the name below, and an app with this bundle id in App Store Connect.
+
+workflows:
+  ios-check:
+    name: iOS check (unsigned)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Unit tests
+        script: |
+          flutter test test/ingredient_parser_test.dart test/local_recipe_parser_service_test.dart \
+            test/shopping_list_test.dart test/l10n_test.dart test/ingredient_search_test.dart
+      - name: Install pods
+        script: cd ios && pod install
+      - name: Build iOS without signing
+        script: flutter build ios --release --no-codesign
+    artifacts:
+      - build/ios/iphoneos/*.app
+      - /tmp/xcodebuild_logs/*.log
+
+  ios-testflight:
+    name: iOS → TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      # Must match the API key name in Codemagic → Team settings → Integrations → Developer Portal.
+      app_store_connect: Codemagic API key
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.cook.myYamiRecipes
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Install pods
+        script: cd ios && pod install
+      - name: Apply signing profiles
+        script: xcode-project use-profiles
+      - name: Build ipa
+        # Codemagic's build counter keeps TestFlight build numbers increasing.
+        script: |
+          flutter build ipa --release \
+            --build-number=$PROJECT_BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
